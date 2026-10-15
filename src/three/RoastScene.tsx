@@ -18,7 +18,7 @@ import {
   createParticleMaterial,
 } from "./shaders";
 import { useStudioEnv } from "./useStudioEnv";
-import { clamp01, damp, lerp, makeRandom, smoothstep } from "./util";
+import { clamp01, damp, fitFactor, lerp, makeRandom, smoothstep } from "./util";
 
 const ENV_BANDS = [
   { x: 0.3, y: 0.3, w: 0.4, h: 0.5, color: "#ff9d3c", intensity: 1.4 },
@@ -40,6 +40,7 @@ type Props = {
  */
 export function RoastScene({ progress, count, particles, reduced }: Props) {
   const camera = useThree((s) => s.camera) as THREE.PerspectiveCamera;
+  const size = useThree((s) => s.size);
   useStudioEnv(ENV_BANDS, ENV_BASE);
 
   const geo = useMemo(
@@ -106,10 +107,11 @@ export function RoastScene({ progress, count, particles, reduced }: Props) {
     const heat = Math.sin(smoothstep(0, 0.85, p) * Math.PI) * 0.9 + 0.1;
     mat.uniformsRef.uEmber.value = state.ember * (0.4 + heat);
 
+    const fit = fitFactor(size.width, size.height);
     camera.position.set(
-      Math.sin(p * 0.9) * 0.9,
-      lerp(1.1, 0.05, smoothstep(0, 0.6, p)),
-      lerp(6.4, 2.5, smoothstep(0, 0.9, p)),
+      Math.sin(p * 0.9) * 0.9 * fit,
+      lerp(1.1, 0.05, smoothstep(0, 0.6, p)) * fit,
+      lerp(6.4, 2.5, smoothstep(0, 0.9, p)) * fit,
     );
     camera.lookAt(0, lerp(0.1, -0.05, p), 0);
     const fov = lerp(36, 52, smoothstep(0.2, 1, p));

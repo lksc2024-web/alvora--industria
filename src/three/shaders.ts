@@ -80,19 +80,29 @@ export function createBackdropMaterial(top = "#120b07", bottom = "#060403") {
         float h = clamp( d.y * 0.5 + 0.5, 0.0, 1.0 );
         vec3 col = mix( uBottom, uTop, pow( h, 0.85 ) );
 
-        // halo direcional quente (a luz que atravessa a cena)
-        float g = pow( clamp( dot( d, normalize( uGlowPos ) ), 0.0, 1.0 ), 5.0 );
-        col += uGlowColor * g * uGlow;
+        // Halo direcional quente — a fonte de luz que atravessa a cena.
+        // O núcleo é estreito de propósito: um lobo largo transformaria o
+        // fundo inteiro em bege e mataria a leitura cinematográfica.
+        float ndl = clamp( dot( d, normalize( uGlowPos ) ), 0.0, 1.0 );
+        col += uGlowColor * pow( ndl, 26.0 ) * uGlow;
+        col += uGlowColor * pow( ndl, 6.0 ) * uGlow * 0.16;
 
-        // nuvem lenta para o fundo nunca parecer um gradiente chapado
-        float n = aln_fbm( d * 2.4 + vec3( 0.0, uTime * 0.012, 0.0 ) );
+        // Nuvem lenta para o fundo nunca parecer um gradiente chapado.
+        // Duas oitavas bastam nesta escala e o fundo cobre a tela inteira —
+        // quatro oitavas aqui custariam mais que o resto da cena somado.
+        float n = aln_noise( d * 2.4 + vec3( 0.0, uTime * 0.012, 0.0 ) )
+                + aln_noise( d * 5.1 + vec3( 3.0, uTime * 0.02, 0.0 ) ) * 0.5;
         col *= 1.0 + n * 0.1;
+
+        // vinheta esférica: escurece atrás da câmera e nas bordas do domo
+        col *= 0.55 + 0.45 * smoothstep( -0.85, 0.25, d.y );
 
         // grão fino evita banding em telas de 8 bits
         float gr = fract( sin( dot( gl_FragCoord.xy, vec2( 12.9898, 78.233 ) ) ) * 43758.5453 );
         col += ( gr - 0.5 ) * uGrain;
 
         gl_FragColor = vec4( max( col, vec3( 0.0 ) ), 1.0 );
+        #include <tonemapping_fragment>
         #include <colorspace_fragment>
       }
     `,
@@ -203,8 +213,15 @@ export function createParticleMaterial() {
         // some nas extremidades do ciclo para não "piscar" ao renascer
         vFade = smoothstep( 0.0, 0.18, life ) * ( 1.0 - smoothstep( 0.76, 1.0, life ) );
 
+        // Teto de tamanho: sem ele, uma partícula de vapor perto da câmera
+        // passa de 200 px e, com blending aditivo, o overdraw derruba o
+        // frame rate em GPU móvel.
         float size = uSize * ( 0.35 + aRand * 0.9 );
-        gl_PointSize = size * uPixelRatio * ( 8.0 / max( 0.6, -mv.z ) );
+        gl_PointSize = clamp(
+          size * uPixelRatio * ( 8.0 / max( 0.6, -mv.z ) ),
+          1.0,
+          110.0 * uPixelRatio
+        );
       }
     `,
     fragmentShader: /* glsl */ `
@@ -221,7 +238,9 @@ export function createParticleMaterial() {
         // núcleo quente com queda suave — brasa/poeira/vapor com a mesma massa
         float a = pow( 1.0 - d * 2.0, 2.2 );
         vec3 col = mix( uColorA, uColorB, vRand );
-        col += uColorA * pow( 1.0 - d * 2.0, 7.0 ) * 0.6;
+        // realce central contido: um núcleo forte demais estoura para branco
+        // e a brasa perde a cor que a define
+        col += uColorA * pow( 1.0 - d * 2.0, 7.0 ) * 0.28;
         gl_FragColor = vec4( col, a * vFade * uOpacity );
         #include <colorspace_fragment>
       }

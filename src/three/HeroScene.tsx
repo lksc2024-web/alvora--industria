@@ -17,7 +17,7 @@ import {
   createParticleMaterial,
 } from "./shaders";
 import { useStudioEnv } from "./useStudioEnv";
-import { damp, makeRandom, smoothstep } from "./util";
+import { damp, fitFactor, makeRandom, smoothstep } from "./util";
 
 const ENV_BANDS = [
   { x: 0.2, y: 0.18, w: 0.46, h: 0.5, color: "#ffdcb0", intensity: 1.35 },
@@ -36,6 +36,7 @@ type Props = {
 
 export function HeroScene({ progress, pointer, reduced, particles }: Props) {
   const camera = useThree((s) => s.camera) as THREE.PerspectiveCamera;
+  const size = useThree((s) => s.size);
   useStudioEnv(ENV_BANDS, ENV_BASE);
 
   const geo = useMemo(() => buildMorphGeometry([120, 84]), []);
@@ -60,16 +61,16 @@ export function HeroScene({ progress, pointer, reduced, particles }: Props) {
     const rnd = makeRandom(991);
     return Array.from({ length: 7 }, (_, i) => ({
       pos: [
-        (rnd() - 0.5) * 4.6,
-        (rnd() - 0.5) * 3.0,
-        -1.4 - rnd() * 2.6,
+        (rnd() - 0.5) * 5.4,
+        (rnd() - 0.5) * 3.4,
+        -2.0 - rnd() * 3.4,
       ] as [number, number, number],
       rot: [rnd() * 0.8 - 0.4, rnd() * 6.28, rnd() * 6.28] as [
         number,
         number,
         number,
       ],
-      scale: 0.65 + rnd() * 0.8,
+      scale: 0.55 + rnd() * 0.65,
       phase: i * 1.3,
     }));
   }, []);
@@ -125,7 +126,7 @@ export function HeroScene({ progress, pointer, reduced, particles }: Props) {
       fruit.current.rotation.y = time * 0.14 + px.current * 0.1;
       fruit.current.rotation.z = Math.sin(time * 0.3) * 0.06 - 0.12;
       fruit.current.rotation.x = Math.sin(time * 0.24) * 0.05;
-      const s = (1.28 + Math.sin(time * 0.6) * 0.012) * (0.6 + i * 0.4);
+      const s = (1.12 + Math.sin(time * 0.6) * 0.012) * (0.6 + i * 0.4);
       fruit.current.scale.setScalar(s);
       fruit.current.position.y = Math.sin(time * 0.5) * 0.035 + (1 - i) * -0.4;
     }
@@ -141,7 +142,7 @@ export function HeroScene({ progress, pointer, reduced, particles }: Props) {
     pMat.uniformsRef.uTime.value = time;
     pMat.uniformsRef.uOpacity.value = 0.34 * i * (1 - p * 0.8);
 
-    camera.position.z = 4.2 + p * 1.6;
+    camera.position.z = (4.2 + p * 1.6) * fitFactor(size.width, size.height);
     camera.lookAt(0, 0, 0);
   });
 
@@ -162,8 +163,9 @@ export function HeroScene({ progress, pointer, reduced, particles }: Props) {
           {leafList.map((l, i) => (
             <mesh key={i} geometry={leafGeo} position={l.pos} rotation={l.rot} scale={l.scale}>
               <meshStandardMaterial
-                color={i % 2 === 0 ? "#2c5633" : "#1b3d24"}
-                roughness={0.6}
+                color={i % 2 === 0 ? "#3d7342" : "#285432"}
+                roughness={0.5}
+                envMapIntensity={1.4}
                 side={THREE.DoubleSide}
               />
             </mesh>

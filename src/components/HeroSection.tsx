@@ -67,12 +67,18 @@ export function HeroSection() {
       {/* legibilidade garantida sobre a cena, em qualquer estado da animação */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_top,rgba(7,4,3,0.94)_0%,rgba(7,4,3,0.72)_26%,rgba(7,4,3,0.12)_58%,rgba(7,4,3,0.5)_100%)]"
+        className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_top,rgba(7,4,3,0.96)_0%,rgba(7,4,3,0.88)_24%,rgba(7,4,3,0.7)_48%,rgba(7,4,3,0.42)_70%,rgba(7,4,3,0.3)_84%,rgba(7,4,3,0.62)_100%)]"
+      />
+      {/* segunda camada horizontal: abre espaço para a tipografia à esquerda
+          sem apagar a imagem do lado direito */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(7,4,3,0.72)_0%,rgba(7,4,3,0.4)_38%,transparent_72%)]"
       />
       <div aria-hidden className="pointer-events-none absolute inset-0 grain" />
 
-      <div className="shell relative flex h-full flex-col justify-end pb-20 pt-24 md:pb-24">
-        <p className="eyebrow mb-5 animate-[fade-up_1.2s_var(--ease-out-expo)_0.2s_both]">
+      <div className="shell relative flex h-full flex-col justify-end pb-12 pt-20 md:pb-24 md:pt-24">
+        <p className="eyebrow short-hide mb-5 animate-[fade-up_1.2s_var(--ease-out-expo)_0.2s_both]">
           {hero.eyebrow}
         </p>
 
@@ -101,7 +107,7 @@ export function HeroSection() {
           </div>
         </div>
 
-        <div className="mt-12 flex items-center justify-between gap-6 border-t border-white/10 pt-6">
+        <div className="short-hide mt-12 flex items-center justify-between gap-6 border-t border-white/10 pt-6">
           <p className="max-w-xs text-[0.7rem] uppercase tracking-[0.2em] text-mist-400">
             {brand.signature}
           </p>
@@ -129,7 +135,7 @@ function HeroFallback() {
         fill
         priority
         sizes="100vw"
-        className="object-cover object-center"
+        className="object-cover object-center brightness-[0.62] saturate-[1.08]"
       />
       <div
         aria-hidden

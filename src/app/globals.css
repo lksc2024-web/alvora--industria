@@ -271,6 +271,20 @@
   }
 }
 
+/* Paisagem curta (celular deitado): a tipografia de display não cabe na
+   altura disponível e invade o cabeçalho. Reduz a escala e aperta o ritmo. */
+@media (orientation: landscape) and (max-height: 560px) {
+  :root {
+    --text-hero: clamp(1.9rem, 5.4vw, 3.1rem);
+    --text-display: clamp(1.5rem, 3.6vw, 2.2rem);
+    --text-title: clamp(1.2rem, 2.6vw, 1.6rem);
+  }
+
+  .short-hide {
+    display: none;
+  }
+}
+
 @keyframes fade-up {
   from {
     opacity: 0;

@@ -49,10 +49,12 @@ export function CoffeeThread() {
   );
 
   return (
+    // Só a partir de xl, onde a calha lateral (4,5rem) comporta o fio sem
+    // encostar no texto em nenhuma largura intermediária.
     <div
       ref={wrap}
       aria-hidden
-      className="pointer-events-none absolute inset-y-0 left-0 z-10 hidden w-[76px] select-none md:block lg:w-[112px]"
+      className="pointer-events-none absolute inset-y-0 left-0 z-10 hidden w-[72px] select-none opacity-75 xl:block 2xl:w-[92px]"
     >
       <svg
         className="h-full w-full"

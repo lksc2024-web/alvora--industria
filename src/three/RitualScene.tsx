@@ -12,7 +12,7 @@ import {
   createParticleMaterial,
 } from "./shaders";
 import { useStudioEnv } from "./useStudioEnv";
-import { clamp01, damp, lerp, smoothstep } from "./util";
+import { clamp01, damp, fitFactor, lerp, smoothstep } from "./util";
 
 const ENV_BANDS = [
   { x: 0.3, y: 0.24, w: 0.4, h: 0.44, color: "#ffd9a8", intensity: 1.2 },
@@ -33,6 +33,7 @@ type Props = {
  */
 export function RitualScene({ progress, particles, reduced }: Props) {
   const camera = useThree((s) => s.camera) as THREE.PerspectiveCamera;
+  const size = useThree((s) => s.size);
   useStudioEnv(ENV_BANDS, ENV_BASE);
 
   const cremaMat = useMemo(() => createCremaMaterial(), []);
@@ -52,7 +53,7 @@ export function RitualScene({ progress, particles, reduced }: Props) {
     u.uPixelRatio.value = Math.min(window.devicePixelRatio || 1, 1.75);
     u.uColorA.value.set("#fff3e2");
     u.uColorB.value.set("#c4a07a");
-    u.uSize.value = 70;
+    u.uSize.value = 44;
     u.uSpread.value.set(2.6, 3.2, 2.0);
     u.uSpeed.value = 0.1;
     u.uSwirl.value = 0.16;
@@ -91,10 +92,11 @@ export function RitualScene({ progress, particles, reduced }: Props) {
 
     // a câmera desce sobre a xícara e depois se afasta um pouco
     const dive = smoothstep(0, 0.6, p);
+    const fit = fitFactor(size.width, size.height);
     camera.position.set(
-      Math.sin(p * 2.2) * 0.22,
-      lerp(2.6, 1.15, dive) + smoothstep(0.75, 1, p) * 0.35,
-      lerp(2.2, 0.95, dive) + smoothstep(0.75, 1, p) * 0.5,
+      Math.sin(p * 2.2) * 0.22 * fit,
+      (lerp(2.6, 1.15, dive) + smoothstep(0.75, 1, p) * 0.35) * fit,
+      (lerp(2.2, 0.95, dive) + smoothstep(0.75, 1, p) * 0.5) * fit,
     );
     camera.lookAt(0, 0, 0);
     const fov = lerp(40, 30, smoothstep(0.3, 1, p));

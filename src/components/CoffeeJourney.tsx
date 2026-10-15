@@ -120,7 +120,7 @@ export function CoffeeJourney() {
 
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_top,rgba(7,4,3,0.9)_0%,rgba(7,4,3,0.35)_30%,transparent_55%)]"
+          className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_top,rgba(7,4,3,0.95)_0%,rgba(7,4,3,0.85)_16%,rgba(7,4,3,0.6)_34%,rgba(7,4,3,0.22)_56%,transparent_74%)]"
         />
         <div aria-hidden className="pointer-events-none absolute inset-0 grain" />
 

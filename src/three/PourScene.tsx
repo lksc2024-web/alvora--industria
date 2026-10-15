@@ -14,7 +14,7 @@ import {
   createStreamMaterial,
 } from "./shaders";
 import { useStudioEnv } from "./useStudioEnv";
-import { clamp01, damp, lerp, smoothstep } from "./util";
+import { clamp01, damp, fitFactor, lerp, smoothstep } from "./util";
 
 const ENV_BANDS = [
   { x: 0.22, y: 0.22, w: 0.44, h: 0.46, color: "#ffe0b8", intensity: 1.3 },
@@ -37,6 +37,7 @@ type Props = {
  */
 export function PourScene({ progress, particles, reduced }: Props) {
   const camera = useThree((s) => s.camera) as THREE.PerspectiveCamera;
+  const size = useThree((s) => s.size);
   useStudioEnv(ENV_BANDS, ENV_BASE);
 
   const cupGeo = useMemo(() => buildCupGeometry(84), []);
@@ -60,7 +61,7 @@ export function PourScene({ progress, particles, reduced }: Props) {
     u.uPixelRatio.value = Math.min(window.devicePixelRatio || 1, 1.75);
     u.uColorA.value.set("#fff0dc");
     u.uColorB.value.set("#b7956f");
-    u.uSize.value = 52;
+    u.uSize.value = 34;
     u.uSpread.value.set(1.3, 2.2, 1.3);
     u.uSpeed.value = 0.13;
     u.uSwirl.value = 0.2;
@@ -89,12 +90,14 @@ export function PourScene({ progress, particles, reduced }: Props) {
     const pouring = smoothstep(0.16, 0.62, p);
     const settle = smoothstep(0.55, 1.0, p);
 
+    const fit = fitFactor(size.width, size.height);
+    const look = lerp(0.5, 0.26, approach);
     camera.position.set(
-      Math.sin(p * 1.4) * 0.32,
-      lerp(1.5, 0.78, approach) - settle * 0.18,
-      lerp(4.6, 2.55, approach) - settle * 0.25,
+      Math.sin(p * 1.4) * 0.32 * fit,
+      look + (lerp(1.5, 0.78, approach) - settle * 0.18 - look) * fit,
+      (lerp(4.6, 2.55, approach) - settle * 0.25) * fit,
     );
-    camera.lookAt(0, lerp(0.5, 0.26, approach), 0);
+    camera.lookAt(0, look, 0);
 
     const su = streamMat.uniformsRef;
     su.uTime.value = time;
@@ -120,7 +123,7 @@ export function PourScene({ progress, particles, reduced }: Props) {
     u.uTime.value = time;
     // vapor só depois que há líquido quente na xícara
     u.uOpacity.value = smoothstep(0.42, 0.95, p) * 0.5;
-    u.uSize.value = lerp(34, 62, settle);
+    u.uSize.value = lerp(26, 40, settle);
 
     backdrop.uniforms.uTime.value = time;
     backdrop.uniforms.uGlow.value = 0.45 + settle * 0.35;

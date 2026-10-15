@@ -124,7 +124,7 @@ function RitualFallback() {
       aria-label="O ritual do preparo"
     >
       <div className="shell grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
-        <div className="relative aspect-square overflow-hidden rounded-full">
+        <div className="relative mx-auto aspect-square w-full max-w-[26rem] overflow-hidden rounded-full lg:mx-0">
           <Image
             src="/img/cappuccino.jpg"
             alt="Superfície de um café visto de cima, com crema e desenho na espuma"

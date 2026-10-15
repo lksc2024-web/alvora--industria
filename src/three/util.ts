@@ -83,6 +83,20 @@ export function sampleVec3(
   return out.set(...frames[last].value);
 }
 
+/**
+ * Fator de enquadramento por proporção de tela.
+ * Em retrato o campo horizontal encolhe muito; sem afastar a câmera o objeto
+ * principal vaza do quadro. Multiplica a distância da câmera ao alvo.
+ */
+export function fitFactor(width: number, height: number) {
+  const aspect = width / Math.max(1, height);
+  if (aspect < 0.62) return 1.72;
+  if (aspect < 0.82) return 1.48;
+  if (aspect < 1.05) return 1.26;
+  if (aspect < 1.45) return 1.1;
+  return 1;
+}
+
 /** PRNG determinístico: a cena precisa ser idêntica a cada carregamento. */
 export function makeRandom(seed = 1) {
   let s = seed >>> 0 || 1;

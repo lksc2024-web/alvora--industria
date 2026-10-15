@@ -29,6 +29,7 @@ import type { Keyframe } from "./util";
 import {
   clamp01,
   damp,
+  fitFactor,
   lerp,
   makeRandom,
   rampIndex,
@@ -296,7 +297,7 @@ const ROLES: Role[] = [
   { at: 0.7, size: 9, opacity: 0.8, a: "#b2783f", b: "#49260f", spread: [4.6, 6.5, 4.6], speed: -0.3, swirl: 0.9, turb: 0.45, center: [0, 0.1, 0] },
   { at: 0.82, size: 14, opacity: 0.3, a: "#d8b082", b: "#6a4523", spread: [5, 6, 5], speed: -0.1, swirl: 0.3, turb: 0.5, center: [0, 0.2, 0] },
   // vapor da xícara
-  { at: 1.0, size: 46, opacity: 0.4, a: "#fff2e0", b: "#c7a885", spread: [1.5, 3.2, 1.5], speed: 0.14, swirl: 0.22, turb: 0.35, center: [0, 0.35, 0] },
+  { at: 1.0, size: 32, opacity: 0.4, a: "#fff2e0", b: "#c7a885", spread: [1.5, 3.2, 1.5], speed: 0.14, swirl: 0.22, turb: 0.35, center: [0, 0.35, 0] },
 ];
 
 function sampleRole(p: number, mat: ReturnType<typeof createParticleMaterial>) {
@@ -344,6 +345,7 @@ type Props = {
 
 export function JourneyScene({ progress, count, particles, reduced }: Props) {
   const camera = useThree((s) => s.camera) as THREE.PerspectiveCamera;
+  const size = useThree((s) => s.size);
   useStudioEnv(ENV_BANDS, ENV_BASE);
 
   const geo = useMemo(
@@ -450,8 +452,14 @@ export function JourneyScene({ progress, count, particles, reduced }: Props) {
 
     /* --- câmera -------------------------------------------------------- */
     sampleVec3(CAM_POS, p, vA);
-    camera.position.set(vA.x, vA.y, vA.z);
     sampleVec3(CAM_TARGET, p, vB);
+    // afasta a câmera em telas estreitas para o objeto não vazar do quadro
+    const fit = fitFactor(size.width, size.height);
+    camera.position.set(
+      vB.x + (vA.x - vB.x) * fit,
+      vB.y + (vA.y - vB.y) * fit,
+      vB.z + (vA.z - vB.z) * fit,
+    );
     camera.lookAt(vB);
     const fov = sampleNumber(CAM_FOV, p);
     if (Math.abs(camera.fov - fov) > 0.01) {
@@ -559,22 +567,24 @@ export function JourneyScene({ progress, count, particles, reduced }: Props) {
     }
 
     if (drumRef.current) {
-      const v = window01(p, 0.42, 0.76, 0.07);
+      // Dois aros incandescentes sugerem a boca do tambor sem competir com o
+      // grão. O tambor literal é a seção dedicada de torrefação.
+      const v = window01(p, 0.44, 0.74, 0.07);
       drumRef.current.visible = v > 0.01;
-      drumRef.current.rotation.z = time * 0.55;
-      drumRef.current.scale.setScalar(2.4 + (1 - v) * 0.6);
+      drumRef.current.rotation.z = time * 0.35;
+      drumRef.current.scale.setScalar(2.6 + (1 - v) * 0.8);
       drumRef.current.children.forEach((child) => {
         const m = (child as THREE.Mesh).material as THREE.MeshStandardMaterial;
-        if (m) m.opacity = v;
+        if (m) m.opacity = v * 0.4;
       });
     }
 
     /* --- o café encontra a xícara --------------------------------------- */
     if (cupRef.current) {
-      const v = smoothstep(0.78, 0.88, p);
+      const v = smoothstep(0.84, 0.93, p);
       cupRef.current.visible = v > 0.01;
       cupRef.current.position.y = -1.25 + (1 - v) * 0.5;
-      cupRef.current.scale.setScalar(1.25 * (0.86 + v * 0.14));
+      cupRef.current.scale.setScalar(1.1 * (0.86 + v * 0.14));
       cupRef.current.children.forEach((child) => {
         const m = (child as THREE.Mesh).material as THREE.Material & {
           opacity?: number;
@@ -583,16 +593,18 @@ export function JourneyScene({ progress, count, particles, reduced }: Props) {
       });
     }
 
-    const pourT = smoothstep(0.82, 0.95, p);
+    const pourT = smoothstep(0.87, 0.97, p);
     streamMat.uniformsRef.uTime.value = time;
     streamMat.uniformsRef.uProgress.value = pourT;
-    streamMat.uniformsRef.uOpacity.value = smoothstep(0.8, 0.85, p) * (1 - smoothstep(0.985, 1.0, p) * 0.2);
-    if (streamRef.current) streamRef.current.visible = p > 0.79;
+    streamMat.uniformsRef.uOpacity.value =
+      smoothstep(0.85, 0.89, p) * (1 - smoothstep(0.985, 1.0, p) * 0.2);
+    if (streamRef.current) streamRef.current.visible = p > 0.84;
 
+    // a crema acompanha a xícara de perto: ela nunca aparece vazia em cena
     cremaMat.uniformsRef.uTime.value = time;
-    cremaMat.uniformsRef.uFill.value = smoothstep(0.86, 0.99, p) * 0.97;
+    cremaMat.uniformsRef.uFill.value = smoothstep(0.86, 0.985, p) * 0.97;
     cremaMat.uniformsRef.uFoam.value = smoothstep(0.9, 1.0, p);
-    cremaMat.uniformsRef.uOpacity.value = smoothstep(0.84, 0.9, p);
+    cremaMat.uniformsRef.uOpacity.value = smoothstep(0.85, 0.89, p);
   });
 
   return (
@@ -613,9 +625,10 @@ export function JourneyScene({ progress, count, particles, reduced }: Props) {
         {leaves.map((l, i) => (
           <mesh key={i} geometry={leafGeo} position={l.pos} rotation={l.rot} scale={l.scale}>
             <meshStandardMaterial
-              color={i % 3 === 0 ? "#2f5b35" : "#1f4428"}
-              roughness={0.62}
+              color={i % 3 === 0 ? "#3d7342" : "#285432"}
+              roughness={0.52}
               metalness={0}
+              envMapIntensity={1.4}
               side={THREE.DoubleSide}
               transparent
               opacity={1}
@@ -626,39 +639,28 @@ export function JourneyScene({ progress, count, particles, reduced }: Props) {
 
       {/* tambor da torrefação */}
       <group ref={drumRef} visible={false}>
-        {/* cilindro deitado no eixo Z: a boca do tambor encara a câmera */}
-        <mesh rotation={[Math.PI / 2, 0, 0]}>
-          <cylinderGeometry args={[1, 1, 1.6, 48, 1, true]} />
+        <mesh position={[0, 0, 0.55]}>
+          <torusGeometry args={[1.0, 0.022, 10, 72]} />
           <meshStandardMaterial
-            color="#2b2420"
-            metalness={0.95}
-            roughness={0.42}
-            side={THREE.BackSide}
+            color="#b9793c"
+            metalness={1}
+            roughness={0.24}
+            emissive="#ff6a16"
+            emissiveIntensity={0.35}
             transparent
-            opacity={1}
+            opacity={0}
           />
         </mesh>
-        <mesh position={[0, 0, 0.8]}>
-          <torusGeometry args={[1.01, 0.035, 10, 64]} />
-          <meshStandardMaterial color="#7a5a3a" metalness={1} roughness={0.3} transparent opacity={1} />
+        <mesh position={[0, 0, -0.75]}>
+          <torusGeometry args={[0.82, 0.016, 8, 56]} />
+          <meshStandardMaterial
+            color="#8a5526"
+            metalness={1}
+            roughness={0.3}
+            transparent
+            opacity={0}
+          />
         </mesh>
-        <mesh position={[0, 0, -0.8]}>
-          <torusGeometry args={[1.01, 0.03, 8, 48]} />
-          <meshStandardMaterial color="#6b4b2c" metalness={1} roughness={0.35} transparent opacity={1} />
-        </mesh>
-        {/* pás internas que revolvem os grãos */}
-        {[0, 1, 2].map((i) => (
-          <mesh key={i} rotation={[0, 0, (i * Math.PI * 2) / 3]} position={[0, 0, 0]}>
-            <boxGeometry args={[1.9, 0.02, 1.5]} />
-            <meshStandardMaterial
-              color="#3a2e26"
-              metalness={0.9}
-              roughness={0.5}
-              transparent
-              opacity={1}
-            />
-          </mesh>
-        ))}
       </group>
 
       {/* o lote inteiro */}
@@ -695,6 +697,19 @@ export function JourneyScene({ progress, count, particles, reduced }: Props) {
             clearcoat={0.9}
             clearcoatRoughness={0.12}
             side={THREE.DoubleSide}
+            transparent
+            opacity={1}
+          />
+        </mesh>
+        {/* a asa é o que faz o objeto ler como xícara e não como tigela */}
+        <mesh position={[0.78, 0.5, 0]} rotation={[0, 0, -0.1]}>
+          <torusGeometry args={[0.24, 0.045, 12, 40, Math.PI * 1.25]} />
+          <meshPhysicalMaterial
+            color="#f2e9dc"
+            roughness={0.24}
+            metalness={0.02}
+            clearcoat={0.9}
+            clearcoatRoughness={0.12}
             transparent
             opacity={1}
           />

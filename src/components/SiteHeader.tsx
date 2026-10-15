@@ -44,13 +44,13 @@ export function SiteHeader() {
           <span className="font-display text-xl tracking-[0.26em] text-cream-50 md:text-2xl">
             {brand.wordmark}
           </span>
-          <span className="hidden text-[0.6rem] uppercase tracking-[0.3em] text-gold-400 sm:inline">
+          <span className="hidden text-[0.6rem] uppercase tracking-[0.3em] text-gold-400 sm:inline xl:inline">
             {brand.descriptor}
           </span>
         </a>
 
-        <nav aria-label="Seções do site" className="hidden lg:block">
-          <ul className="flex items-center gap-8">
+        <nav aria-label="Seções do site" className="hidden xl:block">
+          <ul className="flex items-center gap-6 2xl:gap-8">
             {nav.map((item) => (
               <li key={item.href}>
                 <a
@@ -64,7 +64,7 @@ export function SiteHeader() {
           </ul>
         </nav>
 
-        <a href="#contato" className="btn btn-ghost hidden !py-2.5 !text-[0.68rem] lg:inline-flex">
+        <a href="#contato" className="btn btn-ghost hidden !py-2.5 !text-[0.68rem] xl:inline-flex">
           Falar com a ALVORA
         </a>
 
@@ -73,7 +73,7 @@ export function SiteHeader() {
           onClick={() => setOpen((v) => !v)}
           aria-expanded={open}
           aria-controls="menu-mobile"
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/15 lg:hidden"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/15 xl:hidden"
         >
           <span className="sr-only">{open ? "Fechar menu" : "Abrir menu"}</span>
           <span aria-hidden className="relative block h-3 w-5">
@@ -94,7 +94,7 @@ export function SiteHeader() {
       <div
         id="menu-mobile"
         hidden={!open}
-        className="border-t border-white/5 bg-espresso-950/95 backdrop-blur-xl lg:hidden"
+        className="border-t border-white/5 bg-espresso-950/95 backdrop-blur-xl xl:hidden"
       >
         <nav aria-label="Seções do site (mobile)" className="shell py-6">
           <ul className="flex flex-col gap-1">

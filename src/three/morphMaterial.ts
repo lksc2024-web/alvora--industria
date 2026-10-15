@@ -89,7 +89,8 @@ export function createMorphMaterial(): THREE.MeshPhysicalMaterial & {
         "#include <emissivemap_fragment>",
         `
         #include <emissivemap_fragment>
-        float fres = pow( 1.0 - clamp( dot( normal, normalize( vViewPosition ) ), 0.0, 1.0 ), 2.6 );
+        // expoente alto: a brasa fica presa à silhueta em vez de tingir a face
+        float fres = pow( 1.0 - clamp( dot( normal, normalize( vViewPosition ) ), 0.0, 1.0 ), 3.6 );
         totalEmissiveRadiance += uEmberColor * fres * uEmber;
         `,
       );
@@ -143,8 +144,8 @@ const RAMP: Stop[] = [
     scale: 1.0,
   },
   {
-    at: 0.2,
-    morph: 0.04,
+    at: 0.15,
+    morph: 0.03,
     color: "#7d1210",
     groove: "#f0e3c9",
     grooveAmount: 0.05,
@@ -155,11 +156,24 @@ const RAMP: Stop[] = [
     scale: 0.99,
   },
   {
-    at: 0.34,
-    morph: 0.72,
+    // despolpa: a casca sai e aparece a semente ainda em pergaminho
+    at: 0.23,
+    morph: 0.5,
+    color: "#b0744f",
+    groove: "#f2e6cf",
+    grooveAmount: 0.3,
+    roughness: 0.52,
+    clearcoat: 0.45,
+    clearcoatRoughness: 0.4,
+    ember: 0,
+    scale: 0.94,
+  },
+  {
+    at: 0.29,
+    morph: 0.88,
     color: "#d8c49b",
     groove: "#f6ecd8",
-    grooveAmount: 0.55,
+    grooveAmount: 0.58,
     roughness: 0.78,
     clearcoat: 0.12,
     clearcoatRoughness: 0.7,
@@ -167,7 +181,7 @@ const RAMP: Stop[] = [
     scale: 0.9,
   },
   {
-    at: 0.46,
+    at: 0.41,
     morph: 1,
     color: "#93a471",
     groove: "#e9e3cb",
@@ -179,7 +193,7 @@ const RAMP: Stop[] = [
     scale: 0.92,
   },
   {
-    at: 0.58,
+    at: 0.54,
     morph: 1,
     color: "#b5773c",
     groove: "#e6d3ae",
@@ -187,11 +201,11 @@ const RAMP: Stop[] = [
     roughness: 0.6,
     clearcoat: 0.2,
     clearcoatRoughness: 0.5,
-    ember: 0.55,
+    ember: 0.45,
     scale: 1.0,
   },
   {
-    at: 0.68,
+    at: 0.62,
     morph: 1,
     color: "#7c431f",
     groove: "#d6b589",
@@ -199,11 +213,11 @@ const RAMP: Stop[] = [
     roughness: 0.5,
     clearcoat: 0.3,
     clearcoatRoughness: 0.38,
-    ember: 0.75,
+    ember: 0.6,
     scale: 1.05,
   },
   {
-    at: 0.8,
+    at: 0.7,
     morph: 1,
     color: "#44230f",
     groove: "#a97f52",
@@ -211,7 +225,7 @@ const RAMP: Stop[] = [
     roughness: 0.42,
     clearcoat: 0.5,
     clearcoatRoughness: 0.28,
-    ember: 0.3,
+    ember: 0.35,
     scale: 1.07,
   },
   {

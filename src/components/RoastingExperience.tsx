@@ -75,7 +75,11 @@ export function RoastingExperience() {
 
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(130%_100%_at_50%_45%,transparent_25%,rgba(10,4,2,0.82)_85%)]"
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(130%_100%_at_50%_45%,transparent_25%,rgba(10,4,2,0.8)_85%)]"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_bottom,rgba(10,4,2,0.9)_0%,rgba(10,4,2,0.5)_24%,transparent_44%,rgba(10,4,2,0.5)_72%,rgba(10,4,2,0.92)_100%)]"
         />
         <div aria-hidden className="pointer-events-none absolute inset-0 grain" />
 
@@ -89,13 +93,18 @@ export function RoastingExperience() {
           </div>
 
           <div>
-          <ol className="grid gap-px overflow-hidden rounded-lg border border-white/10 bg-white/8 sm:grid-cols-2 lg:grid-cols-4">
+          {/* No celular a lista inteira cobriria a cena: mostramos só a etapa
+              corrente e marcamos o avanço com pontos. */}
+          <ol
+            aria-label="Perfil de torra"
+            className="grid gap-px overflow-hidden rounded-lg border border-white/10 bg-white/8 sm:grid-cols-2 lg:grid-cols-4"
+          >
             {roasting.steps.map((s, i) => {
               const on = i <= step;
               return (
                 <li
                   key={s.label}
-                  className={`bg-espresso-950/80 p-5 backdrop-blur-sm transition-colors duration-700 ${
+                  className={`${i === step ? "block" : "hidden"} bg-espresso-950/80 p-5 backdrop-blur-sm transition-colors duration-700 sm:block ${
                     on ? "text-cream-100" : "text-mist-500"
                   }`}
                 >
@@ -122,6 +131,16 @@ export function RoastingExperience() {
               );
             })}
           </ol>
+          <div aria-hidden className="mt-4 flex gap-2 sm:hidden">
+            {roasting.steps.map((s, i) => (
+              <span
+                key={s.label}
+                className={`h-[3px] flex-1 rounded-full transition-colors duration-500 ${
+                  i <= step ? "bg-gold-400" : "bg-white/18"
+                }`}
+              />
+            ))}
+          </div>
           <p className="mt-4 text-[0.68rem] text-mist-500">{roasting.note}</p>
           </div>
         </div>
