@@ -157,7 +157,36 @@ navegador. As temperaturas de torra estão marcadas como ilustrativas. As pessoa
 nas fotografias são declaradas como figurativas, não como clientes ou
 depoimentos.
 
-## 8. Limitações conhecidas
+## 8. Armadilhas encontradas (vale registrar)
+
+**`smoothstep` invertido é indefinido em GLSL.** Para desenhar um disco que
+cresce de dentro para fora, o caminho intuitivo é
+`smoothstep(raio, raio - margem, r)`. A especificação só define `smoothstep`
+quando `edge0 < edge1`; fora disso o resultado é por conta do driver. Num
+driver devolvia a rampa invertida (certo por acidente), noutro devolvia 0 — e
+a bebida simplesmente não aparecia na xícara. O correto é
+`1.0 - smoothstep(menor, maior, x)`.
+
+**Enquadramento 3D não é responsivo de graça.** Em 9:16 o campo horizontal
+cai pela metade e um objeto que cabia no quadro em 16:9 passa a ser mais largo
+que a tela. `fitFactor` escala a distância da câmera com `1/aspect` (limitado
+a 2,45×), aplicado como multiplicador do vetor câmera→alvo — assim o ângulo de
+visada não muda, só a distância.
+
+**Ângulo de câmera conta mais que o modelo.** A xícara do Ato III estava
+correta, mas a 8° da horizontal a própria borda ocultava a superfície da
+bebida: o objeto lia como um pote vazio. A 30° a mesma geometria lê como café.
+
+**Tamanho de ponto sem teto é uma bomba de fill-rate.** `gl_PointSize`
+proporcional a `1/z` levava partículas de vapor a passar de 200 px. Com
+blending aditivo e algumas centenas de partículas, isso é overdraw suficiente
+para derrubar o frame rate em GPU móvel. O `clamp` resolveu.
+
+**Ruído de tela cheia é o item mais caro da cena.** O fundo cobre cada pixel;
+`fbm` de 4 oitavas ali custava mais que todo o resto somado. Duas oitavas são
+visualmente equivalentes nessa escala.
+
+## 9. Limitações conhecidas
 
 1. **Resolução das fotografias.** Os painéis individuais dentro do mosaico
    `1536×1024` têm ~250–350 px. Foram recortados e reescalados em 1,8×, e por
@@ -168,7 +197,7 @@ depoimentos.
 3. **WebGL no QA** roda sobre SwiftShader (software). O desempenho medido em
    headless não representa o de uma GPU real.
 
-## 9. Pendências / melhorias futuras
+## 10. Pendências / melhorias futuras
 
 - Substituir as fotografias por capturas em alta resolução quando houver
   material original (ou autorização para geração).
