@@ -95,7 +95,7 @@ export function RoastScene({ progress, count, particles, reduced }: Props) {
     const raw = clamp01(progress.current);
     smoothed.current = reduced ? raw : damp(smoothed.current, raw, 6.5, dt);
     const p = smoothed.current;
-    const time = reduced ? 0 : performance.now() / 1000;
+    const time = reduced ? p * 11 : performance.now() / 1000;
 
     // 0 → 1 do perfil de torra: secagem, primeiro crack, desenvolvimento, descarga
     const roast = lerp(0.46, 0.98, p);

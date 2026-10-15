@@ -8,10 +8,10 @@ import {
   useDistinctState,
   useInView,
   useQuality,
-  useReducedMotion,
   useScrollProgress,
   useWebGL,
 } from "@/lib/hooks";
+import { useMotionPref } from "@/lib/motionPref";
 import { roasting } from "@/lib/site";
 import { SceneCanvas } from "@/three/SceneCanvas";
 
@@ -29,7 +29,8 @@ export function RoastingExperience() {
     "20% 0px",
     "160% 0px",
   );
-  const reduced = useReducedMotion();
+  const [motion] = useMotionPref();
+  const reduced = motion === "reduced";
   const webgl = useWebGL();
   const tier = useQuality();
   const [step, setStep] = useDistinctState(0);
@@ -46,7 +47,7 @@ export function RoastingExperience() {
   );
 
   const progress = useScrollProgress(sectionRef, onProgress);
-  const use3D = webgl !== false && !reduced;
+  const use3D = webgl !== false;
 
   if (!use3D) return <RoastFallback />;
 

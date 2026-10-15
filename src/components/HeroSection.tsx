@@ -9,10 +9,10 @@ import {
   useInView,
   usePointer,
   useQuality,
-  useReducedMotion,
   useScrollProgress,
   useWebGL,
 } from "@/lib/hooks";
+import { useMotionPref } from "@/lib/motionPref";
 import { brand, hero } from "@/lib/site";
 
 const HeroScene = dynamic(
@@ -25,7 +25,8 @@ const PARTICLES = { low: 180, mid: 420, high: 700 } as const;
 export function HeroSection() {
   const sectionRef = useRef<HTMLElement>(null);
   const [viewRef, inView, mounted] = useInView<HTMLDivElement>("10% 0px");
-  const reduced = useReducedMotion();
+  const [motion] = useMotionPref();
+  const reduced = motion === "reduced";
   const webgl = useWebGL();
   const tier = useQuality();
   const pointer = usePointer(!reduced);
@@ -46,7 +47,7 @@ export function HeroSection() {
       <HeroFallback />
 
       <div ref={viewRef} className="absolute inset-0">
-        {webgl && !reduced && mounted && (
+        {webgl && mounted && (
           <div className="absolute inset-0 animate-[fade-in_1.6s_var(--ease-out-expo)_both]">
             <SceneCanvas
               active={inView}

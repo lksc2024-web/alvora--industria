@@ -7,10 +7,10 @@ import { useRef } from "react";
 import {
   useInView,
   useQuality,
-  useReducedMotion,
   useScrollProgress,
   useWebGL,
 } from "@/lib/hooks";
+import { useMotionPref } from "@/lib/motionPref";
 import { pour } from "@/lib/site";
 import { SceneCanvas } from "@/three/SceneCanvas";
 
@@ -27,11 +27,12 @@ export function CoffeePour() {
     "20% 0px",
     "160% 0px",
   );
-  const reduced = useReducedMotion();
+  const [motion] = useMotionPref();
+  const reduced = motion === "reduced";
   const webgl = useWebGL();
   const tier = useQuality();
   const progress = useScrollProgress(sectionRef);
-  const use3D = webgl !== false && !reduced;
+  const use3D = webgl !== false;
 
   if (!use3D) return <PourFallback />;
 

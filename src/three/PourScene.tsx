@@ -83,7 +83,7 @@ export function PourScene({ progress, particles, reduced }: Props) {
     const raw = clamp01(progress.current);
     smoothed.current = reduced ? raw : damp(smoothed.current, raw, 7, dt);
     const p = smoothed.current;
-    const time = reduced ? 0 : performance.now() / 1000;
+    const time = reduced ? p * 8 : performance.now() / 1000;
 
     // 0.00–0.18 aproximação · 0.18–0.62 o fio cai · 0.55–1.00 a crema fecha
     const approach = smoothstep(0, 0.2, p);

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { brand, nav } from "@/lib/site";
+import { MotionToggle } from "./MotionToggle";
 
 export function SiteHeader() {
   const [solid, setSolid] = useState(false);
@@ -64,9 +65,12 @@ export function SiteHeader() {
           </ul>
         </nav>
 
-        <a href="#contato" className="btn btn-ghost hidden !py-2.5 !text-[0.68rem] xl:inline-flex">
-          Falar com a ALVORA
-        </a>
+        <div className="flex items-center gap-3">
+          <MotionToggle />
+          <a href="#contato" className="btn btn-ghost hidden !py-2.5 !text-[0.68rem] xl:inline-flex">
+            Falar com a ALVORA
+          </a>
+        </div>
 
         <button
           type="button"
@@ -110,10 +114,13 @@ export function SiteHeader() {
               </li>
             ))}
           </ul>
+          <div className="mt-6">
+            <MotionToggle full />
+          </div>
           <a
             href="#contato"
             onClick={() => setOpen(false)}
-            className="btn btn-primary mt-6 w-full justify-center"
+            className="btn btn-primary mt-3 w-full justify-center"
           >
             Falar com a ALVORA
           </a>

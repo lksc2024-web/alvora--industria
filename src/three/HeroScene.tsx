@@ -103,8 +103,8 @@ export function HeroScene({ progress, pointer, reduced, particles }: Props) {
 
   useFrame((_, delta) => {
     const dt = Math.min(delta, 0.05);
-    const time = reduced ? 0 : performance.now() / 1000;
     const p = progress.current;
+    const time = reduced ? p * 6 : performance.now() / 1000;
 
     // entrada: o fruto emerge do escuro em vez de simplesmente aparecer
     intro.current = reduced ? 1 : damp(intro.current, 1, 1.5, dt);

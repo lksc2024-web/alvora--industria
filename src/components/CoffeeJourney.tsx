@@ -8,10 +8,10 @@ import {
   useDistinctState,
   useInView,
   useQuality,
-  useReducedMotion,
   useScrollProgress,
   useWebGL,
 } from "@/lib/hooks";
+import { useMotionPref } from "@/lib/motionPref";
 import { journey } from "@/lib/site";
 import { SceneCanvas } from "@/three/SceneCanvas";
 
@@ -67,7 +67,8 @@ export function CoffeeJourney() {
     "20% 0px",
     "160% 0px",
   );
-  const reduced = useReducedMotion();
+  const [motion] = useMotionPref();
+  const reduced = motion === "reduced";
   const webgl = useWebGL();
   const tier = useQuality();
   const [active, setActive] = useDistinctState(0);
@@ -89,7 +90,7 @@ export function CoffeeJourney() {
 
   const progress = useScrollProgress(sectionRef, onProgress);
   // otimista: mantém a estrutura 3D até saber que ela não é possível/desejada
-  const use3D = webgl !== false && !reduced;
+  const use3D = webgl !== false;
   const scene = journey[active];
 
   if (!use3D) {

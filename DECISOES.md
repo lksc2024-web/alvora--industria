@@ -157,7 +157,50 @@ navegador. As temperaturas de torra estão marcadas como ilustrativas. As pessoa
 nas fotografias são declaradas como figurativas, não como clientes ou
 depoimentos.
 
-## 8. Armadilhas encontradas (vale registrar)
+## 8. `prefers-reduced-motion` não é um interruptor
+
+Primeira versão trocava **as quatro seções 3D inteiras** pela versão editorial
+estática quando `prefers-reduced-motion: reduce` estava ativo. O resultado foi
+que o cliente abriu o site e perguntou onde estavam as animações: no Windows,
+esse media query fica ligado sempre que as animações do sistema estão
+desativadas — inclusive quando a pessoa fez isso por desempenho, não por
+desconforto vestibular. Ele estava vendo o fallback de acessibilidade.
+
+O erro de raciocínio foi tratar a narrativa como "movimento". Ela é conduzida
+pela rolagem da própria pessoa: é manipulação direta, não animação autônoma.
+O que de fato incomoda em `reduced-motion` é o que se move sozinho.
+
+Como ficou:
+
+| | Narrativa 3D | Movimento autônomo | Transições CSS |
+|---|---|---|---|
+| `full` | sim | sim | sim |
+| `reduced` (padrão do sistema) | **sim** | não — o "tempo" das cenas passa a vir da rolagem | não |
+| sem WebGL | não — versão editorial | — | conforme a preferência |
+
+Em `reduced` o relógio das cenas (`performance.now()`) é substituído pelo
+progresso da seção. Tambor, partículas e enxame continuam se movendo, mas só
+enquanto a pessoa rola: nada acontece sozinho.
+
+Há um controle explícito no cabeçalho (`MotionToggle`) para alternar entre os
+dois, guardado em `localStorage`. Ele também escreve `data-motion` no `<html>`,
+e o CSS de movimento reduzido é escapado por `html:not([data-motion="full"])` —
+sem isso, quem liga as animações pela interface continuaria sem transições,
+porque a media query é do sistema e ignora a escolha feita na página.
+
+> Detalhe de implementação que custou um bug: `data-motion` é escrito por um
+> único componente (`MotionSync`, montado no layout). Com meia dúzia de
+> componentes usando o hook, cada um escrevendo o atributo no seu próprio
+> efeito, a ordem de execução decidia o valor final — e o CSS acabava seguindo
+> a instância errada.
+
+Também passou a existir detecção de GPU fraca (`WEBGL_debug_renderer_info`):
+Intel HD/UHD, Mali de entrada, Adreno 1xx–5xx e renderizadores por software
+rebaixam um degrau no perfil de qualidade. Tela grande não significa GPU
+grande — a máquina onde o problema apareceu tem uma Intel HD Graphics com
+driver de 2015.
+
+## 9. Armadilhas encontradas (vale registrar)
 
 **`smoothstep` invertido é indefinido em GLSL.** Para desenhar um disco que
 cresce de dentro para fora, o caminho intuitivo é

@@ -443,7 +443,9 @@ export function JourneyScene({ progress, count, particles, reduced }: Props) {
       ? target
       : damp(smoothed.current, target, 7.5, dt);
     const p = smoothed.current;
-    const time = reduced ? 0 : performance.now() / 1000;
+    // Em movimento reduzido o relógio para, mas a cena não congela: o "tempo"
+    // passa a vir da própria rolagem. Nada se move sem que a pessoa mova.
+    const time = reduced ? p * 9 : performance.now() / 1000;
 
     /* --- matéria-prima: estado do grão --------------------------------- */
     coffeeStateAt(p, state);

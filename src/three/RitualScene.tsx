@@ -80,7 +80,7 @@ export function RitualScene({ progress, particles, reduced }: Props) {
     const raw = clamp01(progress.current);
     smoothed.current = reduced ? raw : damp(smoothed.current, raw, 6, dt);
     const p = smoothed.current;
-    const time = reduced ? 0 : performance.now() / 1000;
+    const time = reduced ? p * 8 : performance.now() / 1000;
 
     // a extração: primeiras gotas → corpo → crema estabilizada
     const c = cremaMat.uniformsRef;

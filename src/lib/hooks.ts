@@ -193,6 +193,32 @@ export function usePointer(enabled = true) {
   return pointer;
 }
 
+/** Lê a string do renderizador WebGL uma vez e marca GPUs integradas fracas. */
+let weakGpuCache: boolean | null = null;
+function isWeakGpu() {
+  if (weakGpuCache !== null) return weakGpuCache;
+  let weak = false;
+  try {
+    const canvas = document.createElement("canvas");
+    const gl = canvas.getContext("webgl") as WebGLRenderingContext | null;
+    const ext = gl?.getExtension("WEBGL_debug_renderer_info");
+    const raw = ext
+      ? String(gl?.getParameter(ext.UNMASKED_RENDERER_WEBGL) ?? "")
+      : "";
+    const r = raw.toLowerCase();
+    weak =
+      /intel\(r\)? (hd|uhd) graphics/.test(r) ||
+      /\bmali-(t|g3|g5)/.test(r) ||
+      /adreno \(tm\) [1-5]\d\d\b/.test(r) ||
+      /swiftshader|llvmpipe|software/.test(r);
+    gl?.getExtension("WEBGL_lose_context")?.loseContext();
+  } catch {
+    weak = false;
+  }
+  weakGpuCache = weak;
+  return weak;
+}
+
 /** Perfil de qualidade: reduz contagem de partículas/instâncias em telas pequenas. */
 export function useQuality() {
   const [tier, setTier] = useState<"low" | "mid" | "high">("mid");
@@ -210,9 +236,17 @@ export function useQuality() {
         .deviceMemory;
       const cores = navigator.hardwareConcurrency ?? 4;
       const weak = (mem !== undefined && mem <= 4) || cores <= 4;
-      if (w < 768 || weak) setTier("low");
-      else if (w < 1440) setTier("mid");
-      else setTier("high");
+
+      let next: "low" | "mid" | "high";
+      if (w < 768 || weak) next = "low";
+      else if (w < 1440) next = "mid";
+      else next = "high";
+
+      // Tela grande não significa GPU grande. Gráficos integrados antigos
+      // (Intel HD/UHD, Mali, Adreno de entrada) rodam numa fração do
+      // desempenho de uma dedicada — rebaixa um degrau.
+      if (next !== "low" && isWeakGpu()) next = next === "high" ? "mid" : "low";
+      setTier(next);
     };
     compute();
     window.addEventListener("resize", compute);

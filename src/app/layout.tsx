@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Archivo, Fraunces } from "next/font/google";
 import "./globals.css";
+import { MotionSync } from "@/components/MotionSync";
 import { brand, seo } from "@/lib/site";
 
 const fraunces = Fraunces({
@@ -74,6 +75,7 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" className={`${fraunces.variable} ${archivo.variable}`}>
       <body>
+        <MotionSync />
         <a href="#conteudo" className="skip-link">
           Pular para o conteúdo
         </a>
