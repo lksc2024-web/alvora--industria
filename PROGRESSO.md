@@ -65,6 +65,34 @@ Arquivo de continuidade. Atualizado durante a execução.
    → Poster com `brightness .62`, gradiente vertical reforçado e segundo
    gradiente horizontal para abrir espaço à tipografia.
 
+8. **A crema não renderizava** — o shader desenhava o disco de dentro para
+   fora com `smoothstep(uFill, uFill - 0.08, r)`. GLSL **não define**
+   `smoothstep` quando `edge0 > edge1`: em alguns drivers devolve 0 e a bebida
+   some da xícara. Mesmo erro na ponta do fio de café.
+   → Reescrito como `1.0 - smoothstep(menor, maior, x)`.
+
+9. **Ângulo de câmera do Ato III raso demais** — a 8° da horizontal a borda da
+   xícara ocultava a superfície da bebida; o objeto lia como um pote vazio.
+   → Câmera reposicionada para ~30°, olhando para dentro da xícara. O
+   `fitFactor` multiplica a distância sem alterar o ângulo.
+
+10. **Ritmo da narrativa fora de sincronia** — a legenda "Beneficiamento e
+    secagem" aparecia enquanto o fruto ainda estava inteiro e vermelho.
+    → Rampa de torra re-temporizada: cada estado visual é atingido no início
+    da janela da sua legenda, não no fim.
+
+11. **Tambor da jornada lia como tigela de porcelana** — cilindro metálico
+    claro com três pás de 4,5 unidades cruzando o quadro inteiro.
+    → Removido. Ficaram dois aros discretos; o tambor literal continua na
+    seção dedicada de torrefação, onde a câmera está dentro dele.
+
+12. **Torrefação terminava em tela preta** — o calor caía a zero na descarga.
+    → Piso de 0,3 no calor e gradientes de overlay suavizados.
+
+13. **Vapor lendo como estrelas** — expoente de queda fixo em 2,2 dava núcleo
+    marcado demais para partículas grandes.
+    → Uniform `uSoft`: 2,4 para brasa, 1,0 para vapor.
+
 ## Pendências
 
 - Validar a URL pública depois do deploy (assets, scroll, 3D, mobile).

@@ -90,12 +90,17 @@ export function PourScene({ progress, particles, reduced }: Props) {
     const pouring = smoothstep(0.16, 0.62, p);
     const settle = smoothstep(0.55, 1.0, p);
 
+    // A câmera precisa olhar PARA DENTRO da xícara: num ângulo raso a borda
+    // esconde a bebida e o objeto lê como um pote vazio. ~30° resolve, e o
+    // fator de enquadramento multiplica a distância sem alterar o ângulo.
     const fit = fitFactor(size.width, size.height);
-    const look = lerp(0.5, 0.26, approach);
+    const look = lerp(0.62, 0.32, approach);
+    const camY = lerp(3.3, 2.08, approach) - settle * 0.12;
+    const camZ = lerp(5.4, 3.05, approach) + settle * 0.3;
     camera.position.set(
-      Math.sin(p * 1.4) * 0.32 * fit,
-      look + (lerp(1.5, 0.78, approach) - settle * 0.18 - look) * fit,
-      (lerp(4.6, 2.55, approach) - settle * 0.25) * fit,
+      Math.sin(p * 1.4) * 0.3 * fit,
+      look + (camY - look) * fit,
+      camZ * fit,
     );
     camera.lookAt(0, look, 0);
 
