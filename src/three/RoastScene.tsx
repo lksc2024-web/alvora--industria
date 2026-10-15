@@ -106,7 +106,7 @@ export function RoastScene({ progress, count, particles, reduced }: Props) {
     // O calor sobe até o crack e cai na descarga — mas nunca a zero: o fim da
     // seção não pode ser uma tela preta.
     const heat = 0.3 + Math.sin(smoothstep(0, 0.92, p) * Math.PI) * 0.7;
-    mat.uniformsRef.uEmber.value = state.ember * (0.4 + heat);
+    mat.uniformsRef.uEmber.value = state.ember * (0.3 + heat * 0.7);
 
     const fit = fitFactor(size.width, size.height);
     camera.position.set(
@@ -213,10 +213,12 @@ export function RoastScene({ progress, count, particles, reduced }: Props) {
           </mesh>
         ))}
         {/* pás internas */}
+        {/* pás: metal claro o bastante para pegar a luz da brasa — escuras
+            demais, viram uma barra preta cortando o quadro */}
         {[0, 1, 2, 3].map((i) => (
           <mesh key={i} rotation={[0, 0, (i * Math.PI) / 2]}>
-            <boxGeometry args={[1.94, 0.022, 1.6]} />
-            <meshStandardMaterial color="#3c2f26" metalness={0.92} roughness={0.46} />
+            <boxGeometry args={[1.88, 0.05, 1.15]} />
+            <meshStandardMaterial color="#6e5340" metalness={0.88} roughness={0.34} />
           </mesh>
         ))}
         {/* aro externo com rebites */}

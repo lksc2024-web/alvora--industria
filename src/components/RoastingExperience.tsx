@@ -25,7 +25,10 @@ const PARTICLES = { low: 200, mid: 460, high: 760 } as const;
 
 export function RoastingExperience() {
   const sectionRef = useRef<HTMLElement>(null);
-  const [viewRef, inView, mounted] = useInView<HTMLDivElement>("20% 0px");
+  const [viewRef, inView, mounted] = useInView<HTMLDivElement>(
+    "20% 0px",
+    "160% 0px",
+  );
   const reduced = useReducedMotion();
   const webgl = useWebGL();
   const tier = useQuality();
@@ -58,6 +61,16 @@ export function RoastingExperience() {
         ref={viewRef}
         className="sticky top-0 h-[100svh] min-h-[520px] w-full overflow-hidden bg-espresso-950"
       >
+        <div aria-hidden className="absolute inset-0">
+          <Image
+            src="/img/torrefacao-tambor.jpg"
+            alt=""
+            fill
+            sizes="100vw"
+            className="object-cover opacity-40 brightness-[0.55]"
+          />
+          <span className="absolute inset-0 bg-[radial-gradient(120%_90%_at_50%_45%,transparent_18%,rgba(10,4,2,0.88)_88%)]" />
+        </div>
         {webgl === true && mounted && (
           <SceneCanvas
             active={inView}

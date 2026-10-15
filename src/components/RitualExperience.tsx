@@ -24,7 +24,10 @@ const PARTICLES = { low: 70, mid: 140, high: 220 } as const;
 
 export function RitualExperience() {
   const sectionRef = useRef<HTMLElement>(null);
-  const [viewRef, inView, mounted] = useInView<HTMLDivElement>("20% 0px");
+  const [viewRef, inView, mounted] = useInView<HTMLDivElement>(
+    "20% 0px",
+    "160% 0px",
+  );
   const reduced = useReducedMotion();
   const webgl = useWebGL();
   const tier = useQuality();
@@ -53,6 +56,16 @@ export function RitualExperience() {
         ref={viewRef}
         className="sticky top-0 h-[100svh] min-h-[520px] w-full overflow-hidden bg-espresso-950"
       >
+        <div aria-hidden className="absolute inset-0">
+          <Image
+            src="/img/cappuccino.jpg"
+            alt=""
+            fill
+            sizes="100vw"
+            className="object-cover opacity-35 brightness-[0.55]"
+          />
+          <span className="absolute inset-0 bg-[radial-gradient(115%_90%_at_50%_48%,transparent_16%,rgba(7,4,3,0.9)_86%)]" />
+        </div>
         {webgl === true && mounted && (
           <SceneCanvas
             active={inView}

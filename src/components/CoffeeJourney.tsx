@@ -61,7 +61,12 @@ const STILLS: Record<string, { src: string; alt: string }> = {
 
 export function CoffeeJourney() {
   const sectionRef = useRef<HTMLElement>(null);
-  const [viewRef, inView, mounted] = useInView<HTMLDivElement>("20% 0px");
+  // mountMargin generoso: o chunk do three.js começa a baixar bem antes de a
+  // seção chegar à tela, para não haver um quadro vazio em scroll rápido
+  const [viewRef, inView, mounted] = useInView<HTMLDivElement>(
+    "20% 0px",
+    "160% 0px",
+  );
   const reduced = useReducedMotion();
   const webgl = useWebGL();
   const tier = useQuality();
@@ -102,7 +107,19 @@ export function CoffeeJourney() {
         ref={viewRef}
         className="sticky top-0 h-[100svh] min-h-[520px] w-full overflow-hidden"
       >
-        <div aria-hidden className="absolute inset-0 bg-espresso-950" />
+        {/* Poster sob o canvas: enquanto o WebGL carrega (ou se ele falhar),
+            a seção mostra a lavoura em vez de um retângulo preto. O fundo
+            esférico da cena cobre esta camada assim que começa a renderizar. */}
+        <div aria-hidden className="absolute inset-0 bg-espresso-950">
+          <Image
+            src="/img/lavoura-cerejas.jpg"
+            alt=""
+            fill
+            sizes="100vw"
+            className="object-cover opacity-45 brightness-[0.5]"
+          />
+          <span className="absolute inset-0 bg-[radial-gradient(120%_90%_at_50%_45%,transparent_20%,rgba(7,4,3,0.85)_88%)]" />
+        </div>
         {webgl === true && mounted && (
           <SceneCanvas
             active={inView}
