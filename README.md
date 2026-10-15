@@ -1,36 +1,88 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ALVORA — Da origem à xícara
 
-## Getting Started
+Experiência digital cinematográfica para uma indústria de café. A página conta
+**uma única história**: um fruto vermelho na lavoura atravessa a colheita, a
+secagem, a torra, a moagem e o preparo até cair numa xícara — e a transformação
+acontece, literalmente, enquanto você rola a página.
 
-First, run the development server:
+> **ALVORA é uma marca fictícia**, criada para este projeto demonstrativo.
+> Não existe empresa, CNPJ, domínio, canal de atendimento ou produto à venda.
+
+## Como rodar
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev      # http://localhost:3000
+npm run build
+npm run start
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Stack
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- **Next.js 16** (App Router) + **TypeScript**
+- **Tailwind CSS v4** (tokens em `@theme`, via `@tailwindcss/postcss`)
+- **three.js 0.186** + **@react-three/fiber 9** + **@react-three/drei 10**
+- **GSAP 3 / ScrollTrigger** — apenas para ler o progresso de cada seção
+- **Playwright** para o QA automatizado
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Nenhum serviço pago, nenhuma geração de imagem/vídeo por IA, nenhum asset
+externo em runtime. Toda a experiência 3D é código.
 
-## Learn More
+## Estrutura
 
-To learn more about Next.js, take a look at the following resources:
+```
+src/
+  app/
+    layout.tsx          metadados, Open Graph, fontes
+    page.tsx            composição dos atos
+    globals.css         design system (cores, tipografia, utilitários)
+    sitemap.ts robots.ts
+  lib/
+    site.ts             ÚNICA fonte de textos, imagens e config comercial
+    hooks.ts            reduced-motion, WebGL, visibilidade, scroll, qualidade
+  components/
+    SiteHeader  HeroSection  CoffeeJourney  RoastingExperience
+    CoffeePour  CoffeeThread HumanExperience RitualExperience
+    ProductShowcase IndustrySection ConversionSection SiteFooter
+  three/
+    coffeeGeometry.ts   fruto ↔ grão na mesma malha, xícara, pires, folha
+    morphMaterial.ts    material com morph + rampa de torra
+    shaders.ts          fundo, partículas, fio de café, crema
+    useStudioEnv.ts     environment map gerado em canvas (sem HDR externo)
+    SceneCanvas.tsx     wrapper de Canvas com loop controlado por visibilidade
+    HeroScene  JourneyScene  RoastScene  PourScene  RitualScene
+qa/
+  run-qa.mjs            varredura de dispositivos, overflow, a11y, formulário
+  smoke.mjs             teste rápido de uma viewport
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Os três momentos visuais
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| # | Seção | O que acontece |
+|---|---|---|
+| 1 | **A jornada** (`#jornada`) | 8 cenas controladas pela rolagem. Uma malha interpola de cereja a grão; um enxame de grãos instanciados se reorganiza entre sete layouts; um sistema de partículas muda de poeira para brasa, pó e vapor. |
+| 2 | **Torrefação** (`#torrefacao`) | Tambor metálico, massa de grãos tombando, brasas e luz âmbar. A rolagem é o perfil de torra: secagem → crack → desenvolvimento → descarga. |
+| 3 | **O ritual** (`#ritual`) | Macro da superfície do espresso. A crema se forma em espiral e estabiliza; a câmera mergulha e se afasta. |
 
-## Deploy on Vercel
+Entre a xícara (`#xicara`) e a seção humana, um fio de café continua descendo
+pela calha lateral (`CoffeeThread`), costurando as duas seções.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Acessibilidade e fallbacks
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `prefers-reduced-motion` e ausência de WebGL trocam as seções fixadas por
+  versões editoriais completas — mesma narrativa, mesmo conteúdo.
+- A jornada de 8 cenas existe em `sr-only` como lista ordenada.
+- Skip link, foco visível, `lang="pt-BR"`, `alt` em todas as imagens.
+
+## QA
+
+```bash
+npm run start                       # em um terminal
+QA_ONLY=fallback node qa/run-qa.mjs # layout/a11y em 10 viewports
+QA_ONLY=webgl    node qa/run-qa.mjs # a experiência 3D em 3 viewports
+```
+
+Resultados e screenshots vão para `qa/shots/` (fora do versionamento).
+
+Veja [DECISOES.md](./DECISOES.md) para o registro de decisões, limitações
+conhecidas e pendências.
