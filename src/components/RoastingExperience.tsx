@@ -79,7 +79,7 @@ export function RoastingExperience() {
         />
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_bottom,rgba(10,4,2,0.9)_0%,rgba(10,4,2,0.5)_24%,transparent_44%,rgba(10,4,2,0.5)_72%,rgba(10,4,2,0.92)_100%)]"
+          className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_bottom,rgba(10,4,2,0.82)_0%,rgba(10,4,2,0.42)_24%,transparent_46%,rgba(10,4,2,0.45)_74%,rgba(10,4,2,0.85)_100%)]"
         />
         <div aria-hidden className="pointer-events-none absolute inset-0 grain" />
 

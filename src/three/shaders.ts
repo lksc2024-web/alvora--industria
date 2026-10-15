@@ -126,6 +126,8 @@ export type ParticleUniforms = {
   uTurb: { value: number };
   uCenter: { value: THREE.Vector3 };
   uPixelRatio: { value: number };
+  /** 2.2 = brasa com núcleo marcado · 1.0 = vapor difuso */
+  uSoft: { value: number };
 };
 
 export function createParticleGeometry(count: number) {
@@ -159,6 +161,7 @@ export function createParticleMaterial() {
     uTurb: { value: 0.6 },
     uCenter: { value: new THREE.Vector3(0, 0, 0) },
     uPixelRatio: { value: 1 },
+    uSoft: { value: 2.2 },
   };
 
   const material = new THREE.ShaderMaterial({
@@ -228,6 +231,7 @@ export function createParticleMaterial() {
       uniform vec3 uColorA;
       uniform vec3 uColorB;
       uniform float uOpacity;
+      uniform float uSoft;
       varying float vFade;
       varying float vRand;
 
@@ -235,12 +239,14 @@ export function createParticleMaterial() {
         vec2 uv = gl_PointCoord - 0.5;
         float d = length( uv );
         if ( d > 0.5 ) discard;
-        // núcleo quente com queda suave — brasa/poeira/vapor com a mesma massa
-        float a = pow( 1.0 - d * 2.0, 2.2 );
+        // Brasa pede núcleo marcado; vapor pede massa difusa. O mesmo sistema
+        // atende os dois trocando só o expoente.
+        float r = 1.0 - d * 2.0;
+        float a = pow( r, uSoft );
         vec3 col = mix( uColorA, uColorB, vRand );
         // realce central contido: um núcleo forte demais estoura para branco
         // e a brasa perde a cor que a define
-        col += uColorA * pow( 1.0 - d * 2.0, 7.0 ) * 0.28;
+        col += uColorA * pow( r, 7.0 ) * 0.28 * smoothstep( 1.0, 2.0, uSoft );
         gl_FragColor = vec4( col, a * vFade * uOpacity );
         #include <colorspace_fragment>
       }
@@ -341,7 +347,7 @@ export function createStreamMaterial() {
         col += vec3( 1.0, 0.82, 0.58 ) * spec * 0.5;
 
         // ponta do fio um pouco mais clara, como respingo iminente
-        col += uLight * smoothstep( head + 0.12, head, vUv.y ) * 0.25;
+        col += uLight * ( 1.0 - smoothstep( head, head + 0.12, vUv.y ) ) * 0.25;
 
         float alpha = reveal * uOpacity * ( 0.78 + fres * 0.22 );
         gl_FragColor = vec4( col, alpha );
@@ -410,8 +416,10 @@ export function createCremaMaterial() {
         float r = length( c );
         if ( r > 1.0 ) discard;
 
-        // a superfície cresce conforme a xícara enche
-        float edge = smoothstep( uFill, uFill - 0.08, r );
+        // A superfície cresce conforme a xícara enche.
+        // Atenção: smoothstep com edge0 > edge1 é indefinido em GLSL — em
+        // alguns drivers devolve 0 e a bebida simplesmente não aparece.
+        float edge = 1.0 - smoothstep( uFill - 0.08, uFill, r );
         if ( edge < 0.01 ) discard;
 
         // coordenada em espiral: é o que faz a crema "girar" como no espresso

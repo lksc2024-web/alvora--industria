@@ -70,7 +70,7 @@ export function CoffeePour() {
             <p className="mt-5 text-[0.95rem] leading-relaxed text-cream-200/80">
               {pour.lead}
             </p>
-            <p className="mt-8 max-w-xs border-l border-gold-400/40 pl-4 text-[0.72rem] leading-relaxed text-mist-400">
+            <p className="mt-8 hidden max-w-xs border-l border-gold-400/40 pl-4 text-[0.72rem] leading-relaxed text-mist-400 md:block">
               O fio, a crema e o vapor são gerados em WebGL — geometria animada
               por shader, sem simulação física e sem vídeo.
             </p>

@@ -90,11 +90,9 @@ export function sampleVec3(
  */
 export function fitFactor(width: number, height: number) {
   const aspect = width / Math.max(1, height);
-  if (aspect < 0.62) return 1.72;
-  if (aspect < 0.82) return 1.48;
-  if (aspect < 1.05) return 1.26;
-  if (aspect < 1.45) return 1.1;
-  return 1;
+  // O enquadramento é desenhado para ~1,55:1. Em proporções mais estreitas a
+  // largura visível cai na mesma medida, então a distância cresce com 1/aspect.
+  return Math.min(2.45, Math.max(1, 1.55 / Math.max(0.35, aspect)));
 }
 
 /** PRNG determinístico: a cena precisa ser idêntica a cada carregamento. */

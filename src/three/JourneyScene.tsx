@@ -283,21 +283,22 @@ type Role = {
   swirl: number;
   turb: number;
   center: [number, number, number];
+  soft: number;
 };
 
 const ROLES: Role[] = [
-  { at: 0.0, size: 16, opacity: 0.0, a: "#cbe0a8", b: "#6f8b4a", spread: [10, 7, 7], speed: 0.03, swirl: 0.04, turb: 0.5, center: [0, 0, -1] },
-  { at: 0.16, size: 18, opacity: 0.22, a: "#e7d2a0", b: "#9a7a46", spread: [11, 7, 7], speed: 0.05, swirl: 0.05, turb: 0.6, center: [0, 0, -1] },
+  { at: 0.0, size: 16, opacity: 0.0, a: "#cbe0a8", b: "#6f8b4a", spread: [10, 7, 7], speed: 0.03, swirl: 0.04, turb: 0.5, center: [0, 0, -1], soft: 1.5 },
+  { at: 0.16, size: 18, opacity: 0.22, a: "#e7d2a0", b: "#9a7a46", spread: [11, 7, 7], speed: 0.05, swirl: 0.05, turb: 0.6, center: [0, 0, -1], soft: 1.5 },
   // poeira seca do terreiro
-  { at: 0.3, size: 20, opacity: 0.4, a: "#f1dcb4", b: "#a98f63", spread: [13, 5, 8], speed: 0.04, swirl: 0.03, turb: 0.8, center: [0, -0.6, -2] },
-  { at: 0.42, size: 14, opacity: 0.18, a: "#c9d4dd", b: "#79858f", spread: [11, 6, 7], speed: 0.06, swirl: 0.06, turb: 0.5, center: [0, -0.4, -1] },
+  { at: 0.3, size: 20, opacity: 0.4, a: "#f1dcb4", b: "#a98f63", spread: [13, 5, 8], speed: 0.04, swirl: 0.03, turb: 0.8, center: [0, -0.6, -2], soft: 1.4 },
+  { at: 0.42, size: 14, opacity: 0.18, a: "#c9d4dd", b: "#79858f", spread: [11, 6, 7], speed: 0.06, swirl: 0.06, turb: 0.5, center: [0, -0.4, -1], soft: 1.5 },
   // brasas da torra
-  { at: 0.56, size: 11, opacity: 0.95, a: "#ffb14a", b: "#ff4d05", spread: [6.5, 7, 5.5], speed: 0.26, swirl: 0.55, turb: 0.5, center: [0, -0.3, 0] },
+  { at: 0.56, size: 11, opacity: 0.95, a: "#ffb14a", b: "#ff4d05", spread: [6.5, 7, 5.5], speed: 0.26, swirl: 0.55, turb: 0.5, center: [0, -0.3, 0], soft: 2.4 },
   // pó de café na moagem
-  { at: 0.7, size: 9, opacity: 0.8, a: "#b2783f", b: "#49260f", spread: [4.6, 6.5, 4.6], speed: -0.3, swirl: 0.9, turb: 0.45, center: [0, 0.1, 0] },
-  { at: 0.82, size: 14, opacity: 0.3, a: "#d8b082", b: "#6a4523", spread: [5, 6, 5], speed: -0.1, swirl: 0.3, turb: 0.5, center: [0, 0.2, 0] },
+  { at: 0.7, size: 9, opacity: 0.8, a: "#b2783f", b: "#49260f", spread: [4.6, 6.5, 4.6], speed: -0.3, swirl: 0.9, turb: 0.45, center: [0, 0.1, 0], soft: 2.2 },
+  { at: 0.82, size: 14, opacity: 0.3, a: "#d8b082", b: "#6a4523", spread: [5, 6, 5], speed: -0.1, swirl: 0.3, turb: 0.5, center: [0, 0.2, 0], soft: 1.6 },
   // vapor da xícara
-  { at: 1.0, size: 32, opacity: 0.4, a: "#fff2e0", b: "#c7a885", spread: [1.5, 3.2, 1.5], speed: 0.14, swirl: 0.22, turb: 0.35, center: [0, 0.35, 0] },
+  { at: 1.0, size: 32, opacity: 0.4, a: "#fff2e0", b: "#c7a885", spread: [1.5, 3.2, 1.5], speed: 0.14, swirl: 0.22, turb: 0.35, center: [0, 0.35, 0], soft: 1.0 },
 ];
 
 function sampleRole(p: number, mat: ReturnType<typeof createParticleMaterial>) {
@@ -325,6 +326,7 @@ function sampleRole(p: number, mat: ReturnType<typeof createParticleMaterial>) {
     lerp(a.center[1], b.center[1], t),
     lerp(a.center[2], b.center[2], t),
   );
+  u.uSoft.value = lerp(a.soft, b.soft, t);
 }
 
 /* ------------------------------------------------------------------ */

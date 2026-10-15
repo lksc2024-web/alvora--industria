@@ -103,8 +103,9 @@ export function RoastScene({ progress, count, particles, reduced }: Props) {
     applyCoffeeState(mat, state);
     mat.uniformsRef.uTime.value = time;
 
-    // o calor sobe até o crack e cai na descarga
-    const heat = Math.sin(smoothstep(0, 0.85, p) * Math.PI) * 0.9 + 0.1;
+    // O calor sobe até o crack e cai na descarga — mas nunca a zero: o fim da
+    // seção não pode ser uma tela preta.
+    const heat = 0.3 + Math.sin(smoothstep(0, 0.92, p) * Math.PI) * 0.7;
     mat.uniformsRef.uEmber.value = state.ember * (0.4 + heat);
 
     const fit = fitFactor(size.width, size.height);
