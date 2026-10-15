@@ -26,8 +26,14 @@ Arquivo de continuidade. Atualizado durante a execução.
 | Fallbacks (sem WebGL / reduced-motion) | ✅ |
 | Build de produção | ✅ |
 | QA layout/a11y — 10 viewports + reduced-motion | ✅ |
-| QA WebGL — capturas e ajuste de direção de arte | 🔄 |
-| Deploy Vercel | 🔄 |
+| QA WebGL — capturas e ajuste de direção de arte | ✅ |
+| Deploy Vercel (produção) | ✅ |
+
+**URL pública:** https://alvora-industria-cafe.vercel.app
+**Projeto Vercel:** `alvora-industria-cafe` (`prj_ZjTAXD6k7pSE7dWCtLDENpM1aXFa`),
+criado do zero. Nenhum dos 24 projetos já existentes na conta foi tocado.
+Vercel Authentication foi desativada no projeto — sem isso a URL pública
+responderia 401.
 
 ## Correções aplicadas durante o QA
 

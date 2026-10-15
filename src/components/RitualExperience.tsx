@@ -84,6 +84,14 @@ export function RitualExperience() {
           aria-hidden
           className="pointer-events-none absolute inset-0 bg-[radial-gradient(115%_90%_at_50%_48%,transparent_28%,rgba(7,4,3,0.86)_86%)]"
         />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 hidden bg-[linear-gradient(to_right,rgba(7,4,3,0.88)_0%,rgba(7,4,3,0.55)_26%,rgba(7,4,3,0.15)_50%,transparent_68%)] md:block"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_bottom,rgba(7,4,3,0.92)_0%,rgba(7,4,3,0.55)_28%,transparent_50%,rgba(7,4,3,0.6)_78%,rgba(7,4,3,0.9)_100%)] md:hidden"
+        />
         <div aria-hidden className="pointer-events-none absolute inset-0 grain" />
 
         <div className="shell pointer-events-none relative flex h-full flex-col justify-between py-24 md:py-28">

@@ -75,6 +75,15 @@ export function CoffeePour() {
           aria-hidden
           className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_95%_at_50%_50%,transparent_32%,rgba(7,4,3,0.8)_88%)]"
         />
+        {/* faixa lateral: garante contraste do texto contra a porcelana clara */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 hidden bg-[linear-gradient(to_right,rgba(7,4,3,0.9)_0%,rgba(7,4,3,0.6)_28%,rgba(7,4,3,0.18)_52%,transparent_70%)] md:block"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_bottom,rgba(7,4,3,0.9)_0%,rgba(7,4,3,0.5)_30%,transparent_52%)] md:hidden"
+        />
         <div aria-hidden className="pointer-events-none absolute inset-0 grain" />
 
         <div className="shell pointer-events-none relative flex h-full items-start pt-24 md:items-center md:pt-0">
