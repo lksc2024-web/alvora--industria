@@ -31,7 +31,7 @@ const SHARED = /* glsl */ `
   // frente de calor: a torra entra por baixo e pelas bordas, com contorno irregular
   vec4 beanAt( vec2 uv, float roast, out float edge ) {
     vec4 g = texture2D( tGreen, uv );
-    vec4 r = texture2D( tRoast, ( uv - 0.5 ) * vec2( 0.86, 0.97 ) + 0.5 );
+    vec4 r = texture2D( tRoast, ( uv - 0.5 ) * vec2( 0.84, 0.96 ) + 0.5 );
     float n = sp_n( uv * 3.0 + 1.7 ) * 0.55 + sp_n( uv * 9.0 ) * 0.3 + sp_n( uv * 31.0 ) * 0.15;
     float d = length( ( uv - 0.5 ) * vec2( 1.6, 1.0 ) );
     // a cor esquenta primeiro (palha → caramelo) e depois a superfície vira a do grão torrado
@@ -40,8 +40,9 @@ const SHARED = /* glsl */ `
     float warm = smoothstep( 0.0, 0.45, roast );
     g.rgb = mix( g.rgb, g.rgb * vec3( 0.95, 0.68, 0.42 ), warm * ( 1.0 - k ) * 0.8 );
     edge = smoothstep( 0.25, 0.5, k ) * ( 1.0 - smoothstep( 0.5, 0.8, k ) ) * step( 0.001, roast ) * step( roast, 0.97 ) * 0.6;
-    vec4 c = mix( g, r, k );
-    c.a = max( g.a * ( 1.0 - k ), r.a * k );
+    vec4 c = vec4( mix( g.rgb, r.rgb, k * smoothstep( 0.05, 0.6, r.a ) ), 1.0 );
+    // o contorno muda junto com a torra inteira, não pixel a pixel: sem fantasma
+    c.a = mix( g.a, r.a, smoothstep( 0.3, 0.8, roast ) );
     return c;
   }
   vec4 subjectAt( vec2 uv, out float edge ) {
