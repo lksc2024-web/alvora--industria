@@ -734,9 +734,9 @@ export function LivingPhoto({
       za = zb = Math.max(1, zoom);
       const h = 0.5 / za;
       const xx = Math.min(1 - h, Math.max(h, x));
-      const k = Math.floor(y - 0.5);
+      const k = Math.max(-1, Math.floor(y - 0.5));
       ia = Math.max(0, k);
-      ib = Math.min(count - 1, k + 1);
+      ib = Math.max(0, Math.min(count - 1, k + 1));
       fa = [xx, y - k];
       fb = [xx, y - k - 1];
       mix = 0;
