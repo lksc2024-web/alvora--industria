@@ -57,6 +57,18 @@ const easeIn = (x: number) => x * x * x;
 const easeOut = (x: number) => 1 - (1 - x) ** 3;
 
 
+/** Queda: 07b. A ponte entre o tambor e a moagem; os grãos caem e começam a se partir. */
+const QUEDA: LiveShot = {
+  src: "/foto/07b-queda.jpg",
+  streams: [{ from: [0.52, 0.0], to: [0.52, 0.78], width: 0.36, speed: 0.05, feather: 0.7, taper: 0.75 }],
+  burst: { center: [0.55, 0.74], radius: [0.42, 0.2], speed: 0.03 },
+  steam: { box: [0.55, 0.98, 0.25, 0.62], speed: 0.03, wiggle: 1 },
+  glow: 0.4,
+  period: 1.3,
+  particles: "po",
+  emitter: [0.55, 0.68],
+};
+
 /** Moagem: 08. O grão se desfaz e o pó se espalha a partir dele. */
 const MOAGEM: LiveShot = {
   src: "/foto/08-moagem.jpg",
@@ -82,11 +94,11 @@ const PREPARO: LiveShot = {
 };
 
 /**
- * A descida inteira, de cima para baixo: tambor, moagem, preparo, o fio na
+ * A descida inteira, de cima para baixo: tambor, queda, moagem, preparo, o fio na
  * xícara. A última foto (a xícara servida) não entra na pilha: a câmera chega
  * nela mergulhando na crema da anterior.
  */
-export const DESCENT_SHOTS: LiveShot[] = [TAMBOR, MOAGEM, PREPARO, XICARA_FIO, XICARA_SERVIDA];
+export const DESCENT_SHOTS: LiveShot[] = [TAMBOR, QUEDA, MOAGEM, PREPARO, XICARA_FIO, XICARA_SERVIDA];
 
 /*
  * Linha do tempo da seção inteira (0..1 da rolagem).
@@ -108,16 +120,18 @@ const TOWER_KEYS: [number, number, number, number][] = [
   [FALL_END, 0.37, 0.31, 1.8],
   [0.47, 0.42, 0.34, 1.6],
   [0.56, 0.64, 0.43, 1.18],
-  [0.61, 1.0, 0.47, 1.2],
-  [0.65, 1.4, 0.5, 1.22],
-  [0.7, 1.55, 0.5, 1.25],
-  [0.74, 2.0, 0.48, 1.22],
-  [0.77, 2.36, 0.47, 1.22],
-  [0.81, 2.5, 0.47, 1.22],
-  [0.845, 3.0, 0.5, 1.2],
-  [0.87, 3.53, 0.52, 1.2],
+  [0.6, 1.05, 0.5, 1.15],
+  [0.64, 1.5, 0.5, 1.12],
+  [0.67, 1.95, 0.5, 1.15],
+  [0.7, 2.4, 0.5, 1.22],
+  [0.73, 2.55, 0.5, 1.25],
+  [0.765, 3.0, 0.48, 1.22],
+  [0.79, 3.36, 0.47, 1.22],
+  [0.82, 3.5, 0.47, 1.22],
+  [0.85, 4.0, 0.5, 1.2],
+  [0.875, 4.53, 0.52, 1.2],
 ];
-export const STACK_END = 0.87;
+export const STACK_END = 0.875;
 
 const ease = (x: number) => x * x * (3 - 2 * x);
 
@@ -175,7 +189,7 @@ export function descentDirection(P: number): Direction {
     const tone = 1 - smoothstep(FALL_END - 0.02, 0.56, P);
     return {
       a: 0,
-      stack: { y, x, zoom, count: 4 },
+      stack: { y, x, zoom, count: 5 },
       tone,
       heat: 0.6 + 0.4 * Math.sin(Math.PI * smoothstep(ACT1_END, 0.6, P)),
       beans: lerp(0.5, 1, smoothstep(ACT1_END, 0.5, P)),
@@ -189,7 +203,7 @@ export function descentDirection(P: number): Direction {
   const cut = q < 0.22 ? -1 : -0.14 + 0.68 * tail ** 1.6;
   const push = lerp(1.2, 1.28, smoothstep(0, 0.45, q));
   const base: [number, number] = [0.52, 0.53];
-  if (q < 0.52) return { a: 3, focusA: base, zoomA: push, cut, ripple: 1 - smoothstep(0.4, 0.6, q) * 0.7 };
+  if (q < 0.52) return { a: 4, focusA: base, zoomA: push, cut, ripple: 1 - smoothstep(0.4, 0.6, q) * 0.7 };
 
   // mergulho na crema da 10 e saída já na crema da 11, que se afasta
   const dive = easeIn(clamp01((q - 0.52) / 0.2));
@@ -200,6 +214,6 @@ export function descentDirection(P: number): Direction {
   const fB: [number, number] = [lerp(0.48, 0.5, back), lerp(0.53, 0.5, back)];
   const mix = smoothstep(0.625, 0.7, q);
   const blur = Math.sin(Math.PI * clamp01((q - 0.56) / 0.2));
-  if (mix >= 0.999) return { a: 4, focusA: fB, zoomA: zB, blur: blur > 0.01 ? blur : 0 };
-  return { a: 3, b: 4, mix, focusA: fA, zoomA: zA, focusB: fB, zoomB: zB, cut: 0.6, blur, ripple: 0.3 };
+  if (mix >= 0.999) return { a: 5, focusA: fB, zoomA: zB, blur: blur > 0.01 ? blur : 0 };
+  return { a: 4, b: 5, mix, focusA: fA, zoomA: zA, focusB: fB, zoomB: zB, cut: 0.6, blur, ripple: 0.3 };
 }

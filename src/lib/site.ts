@@ -97,21 +97,21 @@ export const journey: JourneyScene[] = [
     index: "06",
     title: "A moagem",
     body: "O grão se abre em partículas. A granulometria escolhida define quanta superfície a água vai encontrar — e, com ela, o corpo da bebida.",
-    at: 0.6,
+    at: 0.62,
   },
   {
     id: "preparo",
     index: "07",
     title: "O preparo",
     body: "Água na temperatura certa atravessa o pó sob pressão controlada. Em segundos, aromas presos desde a lavoura voltam ao ar.",
-    at: 0.725,
+    at: 0.75,
   },
   {
     id: "xicara",
     index: "08",
     title: "A xícara",
     body: "O líquido cai denso, brilhante, coroado por crema. A jornada inteira cabe agora em poucos mililitros.",
-    at: 0.835,
+    at: 0.845,
   },
 ];
 

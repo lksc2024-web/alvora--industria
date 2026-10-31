@@ -127,7 +127,7 @@ export function CoffeeJourney() {
     <section
       id="jornada"
       ref={sectionRef}
-      className="relative h-[1500vh] md:h-[1700vh]"
+      className="relative h-[1600vh] md:h-[1800vh]"
       aria-label="A transformação do café, da origem à xícara"
     >
       {/* âncoras do menu: a torrefação e a xícara agora são trechos da descida */}

@@ -249,7 +249,9 @@ vec2 rippleO(vec2 p, vec4 a, vec4 b, float t) {
 }
 
 vec3 tx(sampler2D tex, vec2 p, float bias) {
-  vec2 uv = clamp(vec2(p.x, 1.0 - p.y), 0.001, 0.999);
+  // fora da foto, espelha em vez de repetir a última linha (que vira listras)
+  vec2 m = 1.0 - abs(1.0 - abs(p));
+  vec2 uv = clamp(vec2(m.x, 1.0 - m.y), 0.001, 0.999);
   return bias > 0.0 ? texture2D(tex, uv, bias).rgb : texture2D(tex, uv).rgb;
 }
 
