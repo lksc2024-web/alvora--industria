@@ -287,3 +287,24 @@ com o perfume e os calçados da Âmbar, e fazem a mesma coreografia:
 
 Código em `src/three/photoSprites.ts`. O giro é limitado a poucos graus para a
 foto nunca esticar.
+
+### Torrefação e xícara como fotos vivas (31/10/2026)
+
+O tambor e a xícara em malha 3D continuavam com cara de modelo. As duas seções
+agora mostram a própria foto realista, e o movimento acontece dentro dela
+(`src/three/LivingPhoto.tsx`, coreografia em `livingScenes.ts`):
+
+- **Torrefação (07-tambor):** o leito de grãos gira dentro da boca do tambor,
+  a cascata desce, a bandeja de resfriamento roda em volta do agitador e a
+  fumaça sobe. Grãos recortados da foto de produto caem da borda com gravidade
+  e giro e somem ao entrar no leito. A câmera começa na boca do tambor e desce
+  com a descarga; o tom sai de um dourado claro (secagem) para a torra escura
+  da foto, junto com as etapas da lista.
+- **Xícara (10 → 11):** o fio escorre, a superfície faz ondas a partir do ponto
+  de impacto, a crema gira e o vapor sobe. Na rolagem o fio termina: acima da
+  cauda a foto mostra `10-sem-fio.jpg` (o fio retirado e preenchido com o que
+  está dos lados), e a cauda afina até sumir. A câmera mergulha na crema e sai
+  na crema da foto 11, que se afasta até mostrar a xícara servida.
+- Técnica: flowmap em duas fases, com a fase desencontrada por ruído para não
+  pulsar. Nada de vídeo; o peso é o da própria foto.
+- `RoastScene` e `PourScene` saíram.

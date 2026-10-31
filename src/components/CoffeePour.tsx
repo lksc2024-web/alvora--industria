@@ -9,13 +9,20 @@ import {
   useQuality,
   useScrollProgress,
   useWebGL,
+  type ProgressRef,
 } from "@/lib/hooks";
 import { useMotionPref } from "@/lib/motionPref";
 import { pour } from "@/lib/site";
 import { SceneCanvas } from "@/three/SceneCanvas";
 
-const PourScene = dynamic(
-  () => import("@/three/PourScene").then((m) => m.PourScene),
+const PourLive = dynamic(
+  () =>
+    Promise.all([import("@/three/LivingPhoto"), import("@/three/livingScenes")]).then(
+      ([m, s]) =>
+        function PourLive(props: { progress: ProgressRef; reduced: boolean; particles: number }) {
+          return <m.LivingPhoto shots={s.POUR_SHOTS} direct={s.pourDirection} beans={1} {...props} />;
+        },
+    ),
   { ssr: false },
 );
 
@@ -59,12 +66,8 @@ export function CoffeePour() {
           <span className="absolute inset-0 bg-[radial-gradient(120%_95%_at_50%_50%,transparent_18%,rgba(7,4,3,0.88)_88%)]" />
         </div>
         {webgl === true && mounted && (
-          <SceneCanvas
-            active={inView}
-            className="!absolute inset-0"
-            camera={{ position: [0, 1.5, 4.6], fov: 40 }}
-          >
-            <PourScene
+          <SceneCanvas active={inView} className="!absolute inset-0">
+            <PourLive
               progress={progress}
               particles={PARTICLES[tier]}
               reduced={reduced}
@@ -95,8 +98,8 @@ export function CoffeePour() {
               {pour.lead}
             </p>
             <p className="mt-8 hidden max-w-xs border-l border-gold-400/40 pl-4 text-[0.72rem] leading-relaxed text-mist-400 md:block">
-              O fio, a crema e o vapor são gerados em WebGL — geometria animada
-              por shader, sem simulação física e sem vídeo.
+              O fio, a crema e o vapor se movem dentro da própria fotografia, em
+              WebGL: campos de fluxo no shader, sem vídeo.
             </p>
           </div>
         </div>

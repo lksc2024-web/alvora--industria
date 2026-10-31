@@ -10,18 +10,25 @@ import {
   useQuality,
   useScrollProgress,
   useWebGL,
+  type ProgressRef,
 } from "@/lib/hooks";
 import { useMotionPref } from "@/lib/motionPref";
 import { roasting } from "@/lib/site";
 import { SceneCanvas } from "@/three/SceneCanvas";
 
-const RoastScene = dynamic(
-  () => import("@/three/RoastScene").then((m) => m.RoastScene),
+const RoastLive = dynamic(
+  () =>
+    Promise.all([import("@/three/LivingPhoto"), import("@/three/livingScenes")]).then(
+      ([m, s]) =>
+        function RoastLive(props: { progress: ProgressRef; reduced: boolean; beans: number; particles: number }) {
+          return <m.LivingPhoto shots={s.ROAST_SHOTS} direct={s.roastDirection} panelX={0.68} {...props} />;
+        },
+    ),
   { ssr: false },
 );
 
-const BEANS = { low: 140, mid: 300, high: 460 } as const;
-const PARTICLES = { low: 200, mid: 460, high: 760 } as const;
+const BEANS = { low: 40, mid: 70, high: 100 } as const;
+const PARTICLES = { low: 160, mid: 280, high: 420 } as const;
 
 export function RoastingExperience() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -73,14 +80,10 @@ export function RoastingExperience() {
           <span className="absolute inset-0 bg-[radial-gradient(120%_90%_at_50%_45%,transparent_18%,rgba(10,4,2,0.88)_88%)]" />
         </div>
         {webgl === true && mounted && (
-          <SceneCanvas
-            active={inView}
-            className="!absolute inset-0"
-            camera={{ position: [0, 1.1, 6.4], fov: 36 }}
-          >
-            <RoastScene
+          <SceneCanvas active={inView} className="!absolute inset-0">
+            <RoastLive
               progress={progress}
-              count={BEANS[tier]}
+              beans={BEANS[tier]}
               particles={PARTICLES[tier]}
               reduced={reduced}
             />
