@@ -11,6 +11,7 @@ import {
   createCremaMaterial,
   createParticleGeometry,
   createParticleMaterial,
+  createPorcelainMaterial,
   createStreamMaterial,
 } from "./shaders";
 import { applyBackdropPhoto, BG } from "./photoTextures";
@@ -46,6 +47,12 @@ export function PourScene({ progress, particles, reduced }: Props) {
   const saucerGeo = useMemo(() => buildSaucerGeometry(84), []);
   const streamMat = useMemo(() => createStreamMaterial(), []);
   const cremaMat = useMemo(() => createCremaMaterial(), []);
+  const porcMat = useMemo(() => createPorcelainMaterial(0.8), []);
+  const flatPorcMat = useMemo(() => {
+    const m = createPorcelainMaterial(0.1);
+    m.uniforms.uFlat.value = 1;
+    return m;
+  }, []);
   const backdrop = useMemo(
     () => createBackdropMaterial("#231509", "#060403"),
     [],
@@ -74,10 +81,10 @@ export function PourScene({ progress, particles, reduced }: Props) {
 
   useEffect(
     () => () => {
-      [streamMat, cremaMat, backdrop, pMat].forEach((m) => m.dispose());
+      [streamMat, cremaMat, backdrop, pMat, porcMat, flatPorcMat].forEach((m) => m.dispose());
       [cupGeo, saucerGeo, pGeo].forEach((g) => g.dispose());
     },
-    [streamMat, cremaMat, backdrop, pMat, cupGeo, saucerGeo, pGeo],
+    [streamMat, cremaMat, backdrop, pMat, porcMat, flatPorcMat, cupGeo, saucerGeo, pGeo],
   );
 
   useFrame((_, delta) => {
@@ -159,40 +166,15 @@ export function PourScene({ progress, particles, reduced }: Props) {
 
       <group ref={cup} position={[0, -0.52, 0]} scale={1.45}>
         <mesh geometry={saucerGeo} position={[0, -0.02, 0]}>
-          <meshPhysicalMaterial
-            color="#fbf3e6"
-            emissive="#3b2a1a"
-            emissiveIntensity={0.55}
-            roughness={0.26}
-            metalness={0.02}
-            clearcoat={0.85}
-            clearcoatRoughness={0.14}
-          />
+          <primitive object={flatPorcMat} attach="material" />
         </mesh>
         <mesh geometry={cupGeo}>
-          <meshPhysicalMaterial
-            color="#fbf3e6"
-            emissive="#3b2a1a"
-            emissiveIntensity={0.55}
-            roughness={0.22}
-            metalness={0.02}
-            clearcoat={0.95}
-            clearcoatRoughness={0.1}
-            side={THREE.DoubleSide}
-          />
+          <primitive object={porcMat} attach="material" />
         </mesh>
         {/* asa da xícara */}
         <mesh position={[0.78, 0.5, 0]} rotation={[0, 0, -0.1]}>
           <torusGeometry args={[0.24, 0.045, 12, 40, Math.PI * 1.25]} />
-          <meshPhysicalMaterial
-            color="#fbf3e6"
-            emissive="#3b2a1a"
-            emissiveIntensity={0.55}
-            roughness={0.22}
-            metalness={0.02}
-            clearcoat={0.95}
-            clearcoatRoughness={0.1}
-          />
+          <primitive object={flatPorcMat} attach="material" />
         </mesh>
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.63, 0]}>
           <circleGeometry args={[0.67, 72]} />

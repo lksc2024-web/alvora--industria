@@ -14,6 +14,13 @@ export type MorphUniforms = {
   /** 0 = grão cru/pergaminho, 1 = grão torrado */
   uRoastT: { value: number };
   uBump: { value: number };
+  /** 1 = a luz vem da própria foto (realismo); 0 = luz 3D do three.js */
+  uPhotoLit: { value: number };
+  /** metade da cereja: -1 esquerda, +1 direita, 0 inteira */
+  uHalf: { value: number };
+  /** o grão se desfaz em pó (moagem) */
+  uShatter: { value: number };
+  uGloss: { value: number };
   tCherry: { value: THREE.Texture };
   tGreen: { value: THREE.Texture };
   tRoast: { value: THREE.Texture };
@@ -38,6 +45,10 @@ export function createMorphMaterial(): THREE.MeshPhysicalMaterial & {
     uPhoto: { value: 1 },
     uRoastT: { value: 0 },
     uBump: { value: 1 },
+    uPhotoLit: { value: 1 },
+    uHalf: { value: 0 },
+    uShatter: { value: 0 },
+    uGloss: { value: 0.6 },
     tCherry: { value: photoTexture("/textura/cereja.jpg") },
     tGreen: { value: photoTexture("/textura/grao-verde.jpg") },
     tRoast: { value: photoTexture("/textura/grao-torrado.jpg") },
@@ -52,6 +63,8 @@ export function createMorphMaterial(): THREE.MeshPhysicalMaterial & {
     envMapIntensity: 1.1,
   });
 
+  material.toneMapped = false;
+  material.side = THREE.DoubleSide;
   material.onBeforeCompile = (shader) => {
     Object.assign(shader.uniforms, uniforms);
 
@@ -67,6 +80,7 @@ export function createMorphMaterial(): THREE.MeshPhysicalMaterial & {
       uniform float uTime;
       varying float vGrooveV;
       varying vec3 vDir;
+      varying vec3 vObj;
     ` + shader.vertexShader;
 
     shader.vertexShader = shader.vertexShader
@@ -83,6 +97,7 @@ export function createMorphMaterial(): THREE.MeshPhysicalMaterial & {
         `
         vec3 transformed = mix( aCherry, aBean, uMorph );
         transformed += objectNormal * sin( transformed.x * 9.0 + transformed.y * 7.0 + uTime * 0.7 ) * 0.0035;
+        vObj = transformed;
         `,
       );
 
@@ -99,8 +114,19 @@ export function createMorphMaterial(): THREE.MeshPhysicalMaterial & {
       uniform sampler2D tCherry;
       uniform sampler2D tGreen;
       uniform sampler2D tRoast;
+      uniform float uPhotoLit;
+      uniform float uHalf;
+      uniform float uShatter;
+      uniform float uGloss;
       varying float vGrooveV;
       varying vec3 vDir;
+      varying vec3 vObj;
+      float aln_h3( vec3 p ) { return fract( sin( dot( p, vec3( 127.1, 311.7, 74.7 ) ) ) * 43758.5453 ); }
+      float aln_n3( vec3 p ) {
+        vec3 i = floor( p ); vec3 f = fract( p ); f = f * f * ( 3.0 - 2.0 * f );
+        return mix( mix( mix( aln_h3( i ), aln_h3( i + vec3( 1, 0, 0 ) ), f.x ), mix( aln_h3( i + vec3( 0, 1, 0 ) ), aln_h3( i + vec3( 1, 1, 0 ) ), f.x ), f.y ),
+                    mix( mix( aln_h3( i + vec3( 0, 0, 1 ) ), aln_h3( i + vec3( 1, 0, 1 ) ), f.x ), mix( aln_h3( i + vec3( 0, 1, 1 ) ), aln_h3( i + vec3( 1, 1, 1 ) ), f.x ), f.y ), f.z );
+      }
     ` + shader.fragmentShader;
 
     shader.fragmentShader = shader.fragmentShader
@@ -121,13 +147,29 @@ export function createMorphMaterial(): THREE.MeshPhysicalMaterial & {
         vec3 cherryC = texture2D( tCherry, vn.xy * 0.47 + 0.5 ).rgb;
         vec3 greenC = mix( texture2D( tGreen, uvB ).rgb, texture2D( tGreen, uvF ).rgb, front );
         vec3 roastC = mix( texture2D( tRoast, uvB ).rgb, texture2D( tRoast, uvF ).rgb, front );
-        vec3 beanC = mix( greenC, roastC, uRoastT );
+        // a torra não é um esmaecer: uma frente de calor atravessa o grão
+        float rn = aln_n3( dd * 1.6 + 2.0 ) * 0.75 + aln_n3( dd * 4.5 ) * 0.25;
+        float rf = smoothstep( rn - 0.07, rn + 0.07, uRoastT * 1.25 - 0.12 );
+        vec3 beanC = mix( greenC, roastC, rf );
+        float roastEdge = ( 1.0 - abs( rf - 0.5 ) * 2.0 ) * step( 0.001, uRoastT ) * step( uRoastT, 0.999 );
         float beanL = dot( beanC, vec3( 0.299, 0.587, 0.114 ) );
         // a cor da rampa dá o tom de cada estágio; a foto dá o detalhe
         vec3 toned = diffuseColor.rgb * clamp( beanL / 0.32, 0.25, 2.2 );
-        vec3 bean = mix( toned, beanC, 0.55 );
+        vec3 bean = mix( toned, beanC, 0.82 );
         float isBean = smoothstep( 0.05, 0.6, uMorph );
         vec3 realC = mix( cherryC * 1.05, bean, isBean );
+        // a cereja aberta ao meio: só uma metade, com a polpa por dentro
+        if ( uHalf != 0.0 && vObj.x * uHalf < -0.004 ) discard;
+        if ( !gl_FrontFacing && ( uHalf != 0.0 || uShatter > 0.0 ) ) {
+          float cy = clamp( length( vObj.yz ), 0.0, 1.0 );
+          vec3 flesh = mix( vec3( 0.86, 0.72, 0.42 ), vec3( 0.62, 0.12, 0.08 ), smoothstep( 0.55, 0.95, cy ) );
+          realC = mix( flesh, vec3( 0.24, 0.13, 0.07 ), isBean );
+        }
+        // moagem: o grão se parte em pó a partir de rachaduras
+        float sh = aln_n3( dd * 4.5 + 3.0 ) * 0.65 + aln_n3( dd * 13.0 ) * 0.35;
+        if ( uShatter > 0.0 && sh < uShatter * 1.15 - 0.08 ) discard;
+        float shEdge = uShatter > 0.0 ? 1.0 - smoothstep( 0.0, 0.06, sh - ( uShatter * 1.15 - 0.08 ) ) : 0.0;
+        realC = mix( realC, vec3( 0.36, 0.2, 0.1 ), shEdge );
         diffuseColor.rgb = mix( diffuseColor.rgb, realC, uPhoto );
         float photoH = beanL * isBean;
         float gm = smoothstep( 0.22, 0.92, vGrooveV );
@@ -153,12 +195,29 @@ export function createMorphMaterial(): THREE.MeshPhysicalMaterial & {
         `,
       )
       .replace(
+        "#include <opaque_fragment>",
+        `
+        {
+          // a foto já traz a luz certa: o 3D só modula de leve e põe o brilho
+          vec3 L = normalize( vec3( 0.45, 0.62, 0.64 ) );
+          vec3 V = normalize( vViewPosition );
+          float ndl = max( dot( normal, L ), 0.0 );
+          float spec = pow( max( dot( normal, normalize( L + V ) ), 0.0 ), mix( 18.0, 90.0, uGloss ) ) * uGloss * 0.55;
+          float rim = pow( 1.0 - max( dot( normal, V ), 0.0 ), 3.0 );
+          vec3 lit = diffuseColor.rgb * ( 0.78 + 0.42 * ndl ) + vec3( 1.0, 0.9, 0.76 ) * spec + vec3( 1.0, 0.78, 0.5 ) * rim * 0.22;
+          outgoingLight = mix( outgoingLight, lit + totalEmissiveRadiance, uPhotoLit );
+        }
+        #include <opaque_fragment>
+        `,
+      )
+      .replace(
         "#include <emissivemap_fragment>",
         `
         #include <emissivemap_fragment>
         // expoente alto: a brasa fica presa à silhueta em vez de tingir a face
         float fres = pow( 1.0 - clamp( dot( normal, normalize( vViewPosition ) ), 0.0, 1.0 ), 3.6 );
         totalEmissiveRadiance += uEmberColor * fres * uEmber;
+        totalEmissiveRadiance += uEmberColor * roastEdge * 0.55;
         `,
       );
   };
@@ -390,4 +449,5 @@ export function applyCoffeeState(
   u.uGrooveColor.value.set(state.groove);
   u.uEmber.value = state.ember;
   u.uRoastT.value = state.roast;
+  u.uGloss.value = 1 - state.roughness;
 }

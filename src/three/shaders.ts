@@ -2,6 +2,17 @@ import * as THREE from "three";
 
 import { photoTexture } from "./photoTextures";
 
+let fio: THREE.Texture | null = null;
+function fioTexture() {
+  if (!fio) {
+    fio = new THREE.TextureLoader().load("/textura/fio.jpg");
+    fio.colorSpace = THREE.SRGBColorSpace;
+    fio.wrapS = THREE.ClampToEdgeWrapping;
+    fio.wrapT = THREE.MirroredRepeatWrapping;
+  }
+  return fio;
+}
+
 /** Ruído de gradiente compartilhado por todos os shaders da experiência. */
 export const NOISE_GLSL = /* glsl */ `
 vec3 aln_hash3( vec3 p ) {
@@ -298,10 +309,76 @@ export function createParticleMaterial() {
 }
 
 /* ------------------------------------------------------------------ */
+/* Porcelana com a luz da foto: a xícara e o pires vestem a foto real    */
+/* ------------------------------------------------------------------ */
+
+export function createPorcelainMaterial(height = 0.8) {
+  const uniforms = {
+    tPorc: { value: photoTexture("/textura/porcelana.jpg") },
+    uHeight: { value: height },
+    uOpacity: { value: 1 },
+    uFlat: { value: 0 },
+  };
+  const material = new THREE.ShaderMaterial({
+    uniforms,
+    transparent: true,
+    side: THREE.DoubleSide,
+    vertexShader: /* glsl */ `
+      varying vec3 vN;
+      varying vec3 vV;
+      varying float vY;
+      void main() {
+        vN = normalize( normalMatrix * normal );
+        vec4 mv = modelViewMatrix * vec4( position, 1.0 );
+        vV = -mv.xyz;
+        vY = position.y;
+        gl_Position = projectionMatrix * mv;
+      }
+    `,
+    fragmentShader: /* glsl */ `
+      uniform sampler2D tPorc;
+      uniform float uHeight;
+      uniform float uOpacity;
+      uniform float uFlat;
+      varying vec3 vN;
+      varying vec3 vV;
+      varying float vY;
+      void main() {
+        vec3 n = normalize( vN );
+        if ( !gl_FrontFacing ) n = -n;
+        // a coordenada horizontal vem da curvatura vista pela câmera: o
+        // degradê de luz da porcelana fotografada acompanha o volume da peça
+        float u = clamp( n.x * 0.48 + 0.5, 0.02, 0.98 );
+        float v = uFlat > 0.5 ? clamp( 0.35 + n.y * 0.3, 0.02, 0.98 ) : clamp( vY / uHeight, 0.02, 0.98 );
+        vec3 col = texture2D( tPorc, vec2( u, v ) ).rgb;
+        // a xícara da foto está na sombra; aqui ela precisa ler como porcelana clara
+        float lum = dot( col, vec3( 0.299, 0.587, 0.114 ) );
+        col = mix( col, vec3( lum ) * vec3( 1.0, 0.96, 0.9 ), 0.35 ) * 1.55;
+        if ( !gl_FrontFacing ) col *= 0.8;
+        vec3 V = normalize( vV );
+        float spec = pow( max( dot( n, normalize( vec3( 0.45, 0.62, 0.64 ) + V ) ), 0.0 ), 70.0 );
+        col += vec3( 1.0, 0.93, 0.82 ) * spec * 0.5;
+        gl_FragColor = vec4( col, uOpacity );
+        #include <colorspace_fragment>
+      }
+    `,
+  });
+  // as cenas mexem em material.opacity: repassa para o shader
+  Object.defineProperty(material, "opacity", {
+    get: () => uniforms.uOpacity.value,
+    set: (v: number) => {
+      uniforms.uOpacity.value = v;
+    },
+  });
+  return material;
+}
+
+/* ------------------------------------------------------------------ */
 /* Fio de café: cilindro afinado com silhueta viva, brilho e viscosidade */
 /* ------------------------------------------------------------------ */
 
 export type StreamUniforms = {
+  tFio: { value: THREE.Texture };
   uTime: { value: number };
   uProgress: { value: number };
   uWobble: { value: number };
@@ -318,6 +395,7 @@ export function createStreamMaterial() {
     uDark: { value: new THREE.Color("#1b0d06") },
     uLight: { value: new THREE.Color("#c87f45") },
     uOpacity: { value: 1 },
+    tFio: { value: fioTexture() },
   };
 
   const material = new THREE.ShaderMaterial({
@@ -362,6 +440,7 @@ export function createStreamMaterial() {
       uniform vec3 uDark;
       uniform vec3 uLight;
       uniform float uOpacity;
+      uniform sampler2D tFio;
       varying vec2 vUv;
       varying vec3 vNrm;
       varying vec3 vView;
@@ -384,6 +463,14 @@ export function createStreamMaterial() {
         // realce especular fixo — o reflexo da luz da cafeteria no fio
         float spec = pow( max( 0.0, 1.0 - abs( vUv.x - 0.22 ) * 9.0 ), 3.0 );
         col += vec3( 1.0, 0.82, 0.58 ) * spec * 0.5;
+
+        // o fio fotografado escorrendo: a faixa de café da foto desce pelo cilindro
+        {
+          float across = clamp( dot( normalize( vNrm ), vec3( 1.0, 0.0, 0.0 ) ) * 0.46 + 0.5, 0.03, 0.97 );
+          float down = vUv.y * 0.9 + uTime * 0.85;
+          vec3 real = texture2D( tFio, vec2( across, down ) ).rgb;
+          col = mix( col, real * 1.1, 0.85 );
+        }
 
         // ponta do fio um pouco mais clara, como respingo iminente
         col += uLight * ( 1.0 - smoothstep( head, head + 0.12, vUv.y ) ) * 0.25;

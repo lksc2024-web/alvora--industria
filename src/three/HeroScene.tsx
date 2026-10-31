@@ -18,6 +18,7 @@ import {
 } from "./shaders";
 import { useStudioEnv } from "./useStudioEnv";
 import { applyBackdropPhoto, BG, photoTexture } from "./photoTextures";
+import { createSpriteMaterial } from "./photoSprites";
 
 const FOLHA = () => photoTexture("/textura/folha.jpg");
 import { damp, fitFactor, makeRandom, smoothstep } from "./util";
@@ -54,6 +55,9 @@ export function HeroScene({ progress, pointer, reduced, particles }: Props) {
   const pMat = useMemo(() => createParticleMaterial(), []);
 
   const fruit = useRef<THREE.Mesh>(null);
+  // a cereja da foto, recortada: a luz e o orvalho são os da imagem original
+  const sprite = useMemo(() => createSpriteMaterial(), []);
+  const spriteGeo = useMemo(() => new THREE.PlaneGeometry(2.3, 2.3), []);
   const rig = useRef<THREE.Group>(null);
   const leaves = useRef<THREE.Group>(null);
   const intro = useRef(0);
@@ -100,10 +104,10 @@ export function HeroScene({ progress, pointer, reduced, particles }: Props) {
 
   useEffect(
     () => () => {
-      [mat, backdrop, pMat].forEach((m) => m.dispose());
-      [pGeo, leafGeo].forEach((g) => g.dispose());
+      [mat, backdrop, pMat, sprite].forEach((m) => m.dispose());
+      [pGeo, leafGeo, spriteGeo].forEach((g) => g.dispose());
     },
-    [mat, backdrop, pMat, pGeo, leafGeo],
+    [mat, backdrop, pMat, sprite, pGeo, leafGeo, spriteGeo],
   );
 
   useFrame((_, delta) => {
@@ -129,7 +133,7 @@ export function HeroScene({ progress, pointer, reduced, particles }: Props) {
     }
 
     if (fruit.current) {
-      fruit.current.rotation.y = time * 0.14 + px.current * 0.1;
+      fruit.current.rotation.y = Math.sin(time * 0.3) * 0.22 + px.current * 0.1;
       fruit.current.rotation.z = Math.sin(time * 0.3) * 0.06 - 0.12;
       fruit.current.rotation.x = Math.sin(time * 0.24) * 0.05;
       const s = (1.12 + Math.sin(time * 0.6) * 0.012) * (0.6 + i * 0.4);
@@ -178,7 +182,7 @@ export function HeroScene({ progress, pointer, reduced, particles }: Props) {
             </mesh>
           ))}
         </group>
-        <mesh ref={fruit} geometry={geo} material={mat} />
+        <mesh ref={fruit} geometry={spriteGeo} material={sprite} />
         <points geometry={pGeo} material={pMat} frustumCulled={false} />
       </group>
     </>

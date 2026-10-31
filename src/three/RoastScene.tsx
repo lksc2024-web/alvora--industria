@@ -18,6 +18,7 @@ import {
   createParticleMaterial,
 } from "./shaders";
 import { applyBackdropPhoto, BG } from "./photoTextures";
+import { createSwarmMaterial } from "./photoSprites";
 import { useStudioEnv } from "./useStudioEnv";
 import { clamp01, damp, fitFactor, lerp, makeRandom, smoothstep } from "./util";
 
@@ -50,6 +51,13 @@ export function RoastScene({ progress, count, particles, reduced }: Props) {
     [count],
   );
   const mat = useMemo(() => createMorphMaterial(), []);
+  // os grãos do tambor são os recortes das fotos, torrando aos poucos
+  const swarm = useMemo(() => {
+    const m = createSwarmMaterial();
+    m.uniforms.uStage.value = 1;
+    return m;
+  }, []);
+  const spriteGeo = useMemo(() => new THREE.PlaneGeometry(2.3, 2.3), []);
   const backdrop = useMemo(
     () => createBackdropMaterial("#3a1606", "#060302"),
     [],
@@ -86,10 +94,10 @@ export function RoastScene({ progress, count, particles, reduced }: Props) {
 
   useEffect(
     () => () => {
-      [mat, backdrop, pMat].forEach((m) => m.dispose());
+      [mat, backdrop, pMat, swarm, spriteGeo].forEach((m) => m.dispose());
       pGeo.dispose();
     },
-    [mat, backdrop, pMat, pGeo],
+    [mat, backdrop, pMat, swarm, spriteGeo, pGeo],
   );
 
   useFrame((_, delta) => {
@@ -104,6 +112,8 @@ export function RoastScene({ progress, count, particles, reduced }: Props) {
     coffeeStateAt(roast, state);
     applyCoffeeState(mat, state);
     mat.uniformsRef.uTime.value = time;
+    swarm.uniforms.uTime.value = time;
+    swarm.uniforms.uRoast.value = state.roast;
 
     // O calor sobe até o crack e cai na descarga — mas nunca a zero: o fim da
     // seção não pode ser uma tela preta.
@@ -236,7 +246,7 @@ export function RoastScene({ progress, count, particles, reduced }: Props) {
         })}
       </group>
 
-      <instancedMesh ref={beans} args={[geo, mat, count]} frustumCulled={false} />
+      <instancedMesh ref={beans} args={[spriteGeo, swarm, count]} frustumCulled={false} />
       <points geometry={pGeo} material={pMat} frustumCulled={false} />
     </>
   );

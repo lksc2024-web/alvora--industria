@@ -269,3 +269,21 @@ mantida inteira; as fotos viraram o material dela:
 - Fundos por etapa em `photoTextures.ts` (`BG`).
 - As fotos têm 940 × 1672. Versões maiores podem substituir os arquivos de
   `public/foto/`; os recortes de `public/textura/` saem delas.
+
+### Revisão: recortes das fotos em vez de textura em malha 3D (31/10/2026)
+
+Vestir as malhas 3D com a foto ainda parecia 3D: a luz do three.js refazia a
+foto e o giro esticava a imagem nas bordas. Agora o fruto e os grãos são os
+próprios recortes das fotos (`public/textura/*-recorte.png`), como foi feito
+com o perfume e os calçados da Âmbar, e fazem a mesma coreografia:
+
+- a cereja se abre em duas metades, que giram como portas e mostram a polpa;
+- o grão cru aparece dentro dela e o lote inteiro vira grãos fotografados;
+- na torra, a cor esquenta e uma frente irregular transforma o grão cru no
+  grão torrado da foto;
+- na moagem, o grão se parte em torrões que voam, enquanto o pó sobe;
+- o fio de café usa a faixa do fio real da foto escorrendo, e a xícara usa a
+  porcelana fotografada.
+
+Código em `src/three/photoSprites.ts`. O giro é limitado a poucos graus para a
+foto nunca esticar.

@@ -22,9 +22,16 @@ import {
   createCremaMaterial,
   createParticleGeometry,
   createParticleMaterial,
+  createPorcelainMaterial,
   createStreamMaterial,
 } from "./shaders";
 import { applyBackdropPhoto, BG, photoTexture, stageAt } from "./photoTextures";
+import {
+  createShardsGeometry,
+  createShardsMaterial,
+  createSpriteMaterial,
+  createSwarmMaterial,
+} from "./photoSprites";
 import { useStudioEnv } from "./useStudioEnv";
 
 const FOLHA = () => photoTexture("/textura/folha.jpg");
@@ -94,8 +101,9 @@ const HERO_SCALE: Keyframe<number>[] = [
   { at: 0.3, value: 0.9 },
   { at: 0.5, value: 1.02 },
   { at: 0.66, value: 1.16 },
-  { at: 0.74, value: 0.9 },
-  { at: 0.79, value: 0.0 },
+  { at: 0.74, value: 1.08 },
+  { at: 0.795, value: 1.0 },
+  { at: 0.8, value: 0.0 },
   { at: 1.0, value: 0.0 },
 ];
 
@@ -363,6 +371,28 @@ export function JourneyScene({ progress, count, particles, reduced }: Props) {
     [count],
   );
   const heroMat = useMemo(() => createMorphMaterial(), []);
+  // fruto e grãos feitos dos recortes das fotos
+  const halfMats = useMemo(() => {
+    const m = [createSpriteMaterial(), createSpriteMaterial()];
+    m[0].uniforms.uHalf.value = -1;
+    m[1].uniforms.uHalf.value = 1;
+    return m;
+  }, []);
+  const beanSprite = useMemo(() => {
+    const m = createSpriteMaterial();
+    m.uniforms.uStage.value = 1;
+    return m;
+  }, []);
+  const swarmMat = useMemo(() => createSwarmMaterial(), []);
+  const shardsGeo = useMemo(() => createShardsGeometry(), []);
+  const shardsMat = useMemo(() => createShardsMaterial(), []);
+  const spriteGeo = useMemo(() => new THREE.PlaneGeometry(2.3, 2.3), []);
+  const porcMat = useMemo(() => createPorcelainMaterial(0.8), []);
+  const flatPorcMat = useMemo(() => {
+    const m = createPorcelainMaterial(0.1);
+    m.uniforms.uFlat.value = 1;
+    return m;
+  }, []);
   const fieldMat = useMemo(() => createMorphMaterial(), []);
   const backdropMat = useMemo(() => createBackdropMaterial(), []);
   const particleGeo = useMemo(() => createParticleGeometry(particles), [particles]);
@@ -395,7 +425,11 @@ export function JourneyScene({ progress, count, particles, reduced }: Props) {
     }));
   }, []);
 
-  const heroRef = useRef<THREE.Mesh>(null);
+  const heroRef = useRef<THREE.Group>(null);
+  const beanRef = useRef<THREE.Mesh>(null);
+  const shardsRef = useRef<THREE.Mesh>(null);
+  const doorL = useRef<THREE.Group>(null);
+  const doorR = useRef<THREE.Group>(null);
   const fieldRef = useRef<THREE.InstancedMesh>(null);
   const leavesRef = useRef<THREE.Group>(null);
   const drumRef = useRef<THREE.Group>(null);
@@ -435,12 +469,12 @@ export function JourneyScene({ progress, count, particles, reduced }: Props) {
 
   useEffect(
     () => () => {
-      [heroMat, fieldMat, backdropMat, particleMat, streamMat, cremaMat].forEach(
+      [heroMat, fieldMat, backdropMat, particleMat, streamMat, cremaMat, ...halfMats, beanSprite, swarmMat, shardsMat, shardsGeo, spriteGeo, porcMat, flatPorcMat].forEach(
         (m) => m.dispose(),
       );
       [particleGeo, cupGeo, saucerGeo, leafGeo].forEach((g) => g.dispose());
     },
-    [heroMat, fieldMat, backdropMat, particleMat, streamMat, cremaMat, particleGeo, cupGeo, saucerGeo, leafGeo],
+    [heroMat, fieldMat, backdropMat, particleMat, streamMat, cremaMat, halfMats, beanSprite, swarmMat, shardsMat, shardsGeo, spriteGeo, porcMat, flatPorcMat, particleGeo, cupGeo, saucerGeo, leafGeo],
   );
 
   useFrame((_, delta) => {
@@ -517,15 +551,51 @@ export function JourneyScene({ progress, count, particles, reduced }: Props) {
     }
 
     /* --- objeto herói: fruto → semente → grão --------------------------- */
+    // a cereja se abre em duas metades, como portas, e o grão aparece lá dentro
+    const SPLIT_A = 0.115;
+    const split = smoothstep(SPLIT_A, 0.235, p);
+    const splitOn = p > SPLIT_A;
+    const breakT = smoothstep(0.675, 0.795, p);
+    [...halfMats, beanSprite, swarmMat].forEach((m) => {
+      m.uniforms.uTime.value = time;
+      m.uniforms.uRoast.value = state.roast;
+    });
+    swarmMat.uniforms.uStage.value = smoothstep(0.13, 0.26, p);
+    shardsMat.uniforms.uBreak.value = breakT;
+
     if (heroRef.current) {
+      const g = heroRef.current;
       sampleVec3(HERO_POS, p, vA);
-      heroRef.current.position.copy(vA);
-      const s = sampleNumber(HERO_SCALE, p) * state.scale;
-      heroRef.current.scale.setScalar(Math.max(0, s));
-      heroRef.current.visible = s > 0.002;
-      heroRef.current.rotation.y = p * 5.6 + time * 0.16;
-      heroRef.current.rotation.z = Math.sin(p * 4.2) * 0.3 + smoothstep(0.6, 0.78, p) * 1.1;
-      heroRef.current.rotation.x = Math.sin(p * 2.6) * 0.22;
+      g.position.copy(vA);
+      const base = sampleNumber(HERO_SCALE, p);
+      g.scale.setScalar(Math.max(0.0001, base * 0.92));
+      g.visible = base > 0.002;
+      // a foto sempre encara a câmera; o giro é pequeno para não esticar a imagem
+      g.quaternion.copy(camera.quaternion);
+      g.rotateZ(Math.sin(p * 4.2) * 0.28 + smoothstep(0.58, 0.78, p) * 0.5 + Math.sin(time * 0.45) * 0.04);
+      g.rotateY(Math.sin(time * 0.55 + p * 7.0) * 0.2);
+      g.rotateX(Math.sin(time * 0.4 + p * 3.0) * 0.08);
+
+      const bean = beanRef.current;
+      if (bean) {
+        bean.visible = splitOn && breakT < 0.25;
+        bean.scale.setScalar((0.6 + 0.4 * split) * (1 + state.roast * 0.06));
+        beanSprite.uniforms.uOpacity.value = 1 - smoothstep(0.0, 0.25, breakT);
+      }
+      const shards = shardsRef.current;
+      if (shards) {
+        shards.visible = breakT > 0.001 && breakT < 0.999;
+        shards.scale.setScalar(2.3 * 0.9);
+      }
+      const away = smoothstep(0.55, 1.0, split);
+      [doorL.current, doorR.current].forEach((d, k) => {
+        if (!d) return;
+        const dir = k === 0 ? -1 : 1;
+        d.visible = split < 0.999;
+        d.position.set(dir * (1.15 + away * 1.4), -away * away * 1.2, away * 0.4);
+        d.rotation.set(0, -dir * split * 1.35, dir * away * 0.5);
+      });
+      halfMats.forEach((m) => (m.uniforms.uOpacity.value = 1 - smoothstep(0.75, 1.0, split)));
     }
 
     /* --- o lote: mesmos grãos, outra organização ------------------------ */
@@ -683,12 +753,22 @@ export function JourneyScene({ progress, count, particles, reduced }: Props) {
       {/* o lote inteiro */}
       <instancedMesh
         ref={fieldRef}
-        args={[geo, fieldMat, count]}
+        args={[spriteGeo, swarmMat, count]}
         frustumCulled={false}
       />
 
       {/* fruto / semente / grão — o fio condutor da narrativa */}
-      <mesh ref={heroRef} geometry={geo} material={heroMat} />
+      <group ref={heroRef}>
+        <mesh ref={beanRef} geometry={spriteGeo} material={beanSprite} renderOrder={2} />
+        {/* as metades giram em torno da borda de fora, como portas */}
+        <group ref={doorL} position={[-1.15, 0, 0]}>
+          <mesh geometry={spriteGeo} material={halfMats[0]} position={[1.15, 0, 0.01]} renderOrder={3} />
+        </group>
+        <group ref={doorR} position={[1.15, 0, 0]}>
+          <mesh geometry={spriteGeo} material={halfMats[1]} position={[-1.15, 0, 0.01]} renderOrder={3} />
+        </group>
+        <mesh ref={shardsRef} geometry={shardsGeo} material={shardsMat} frustumCulled={false} renderOrder={4} />
+      </group>
 
       {/* poeira, brasa, pó e vapor */}
       <points geometry={particleGeo} material={particleMat} frustumCulled={false} />
@@ -696,46 +776,15 @@ export function JourneyScene({ progress, count, particles, reduced }: Props) {
       {/* xícara servida */}
       <group ref={cupRef} visible={false} position={[0, -1.25, 0]}>
         <mesh geometry={saucerGeo} position={[0, -0.03, 0]}>
-          <meshPhysicalMaterial
-            color="#fbf3e6"
-            emissive="#3b2a1a"
-            emissiveIntensity={0.55}
-            roughness={0.28}
-            metalness={0.02}
-            clearcoat={0.8}
-            clearcoatRoughness={0.16}
-            transparent
-            opacity={1}
-          />
+          <primitive object={flatPorcMat} attach="material" />
         </mesh>
         <mesh geometry={cupGeo}>
-          <meshPhysicalMaterial
-            color="#fbf3e6"
-            emissive="#3b2a1a"
-            emissiveIntensity={0.55}
-            roughness={0.24}
-            metalness={0.02}
-            clearcoat={0.9}
-            clearcoatRoughness={0.12}
-            side={THREE.DoubleSide}
-            transparent
-            opacity={1}
-          />
+          <primitive object={porcMat} attach="material" />
         </mesh>
         {/* a asa é o que faz o objeto ler como xícara e não como tigela */}
         <mesh position={[0.78, 0.5, 0]} rotation={[0, 0, -0.1]}>
           <torusGeometry args={[0.24, 0.045, 12, 40, Math.PI * 1.25]} />
-          <meshPhysicalMaterial
-            color="#fbf3e6"
-            emissive="#3b2a1a"
-            emissiveIntensity={0.55}
-            roughness={0.24}
-            metalness={0.02}
-            clearcoat={0.9}
-            clearcoatRoughness={0.12}
-            transparent
-            opacity={1}
-          />
+          <primitive object={flatPorcMat} attach="material" />
         </mesh>
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.63, 0]}>
           <circleGeometry args={[0.66, 56]} />
