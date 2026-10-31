@@ -247,3 +247,24 @@ visualmente equivalentes nessa escala.
 - Pós-processamento opcional (bloom seletivo na torra) atrás do perfil `high`.
 - Versão em inglês com `next-intl`.
 - Instrumentar Web Vitals reais com `@vercel/speed-insights`.
+
+
+## Fotografias realistas no lugar dos objetos 3D (31/10/2026)
+
+O fruto, os grãos e a xícara modelados em código pareciam de plástico. O
+cliente gerou no ChatGPT onze fotos verticais, uma por etapa, a partir de
+quadros capturados do próprio site.
+
+- `src/three/PhotoStage.tsx` substitui `HeroScene`, `JourneyScene`,
+  `RoastScene` e `PourScene` (os arquivos antigos ficam no repositório, sem uso).
+- Cada foto tem um mapa de profundidade (`*-prof.jpg`), calculado pela
+  nitidez (o que está em foco está perto) e por elipses marcadas à mão no
+  objeto principal. É ele que dá o parallax 2.5D.
+- Efeitos locais por foto, definidos em `src/three/shots.ts`: fio de líquido
+  escorrendo, redemoinho na crema, ar quente, brasa pulsando, folhas balançando
+  e partículas (poeira, brasa, vapor, pó).
+- Telas largas: a foto vertical vira um painel nítido e a própria foto,
+  desfocada, preenche o fundo. A abertura continua em tela cheia.
+- Resolução das fotos: 940 × 1672. Se o cliente conseguir versões maiores, basta
+  trocar os arquivos em `public/foto/` com os mesmos nomes e refazer os mapas
+  de profundidade.

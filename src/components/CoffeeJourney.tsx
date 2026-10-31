@@ -14,49 +14,26 @@ import {
 import { useMotionPref } from "@/lib/motionPref";
 import { journey } from "@/lib/site";
 import { SceneCanvas } from "@/three/SceneCanvas";
+import { JOURNEY_SHOTS } from "@/three/shots";
 
-const JourneyScene = dynamic(
-  () => import("@/three/JourneyScene").then((m) => m.JourneyScene),
+const PhotoStage = dynamic(
+  () => import("@/three/PhotoStage").then((m) => m.PhotoStage),
   { ssr: false },
 );
 
-const BEANS = { low: 170, mid: 360, high: 560 } as const;
-const PARTICLES = { low: 220, mid: 520, high: 900 } as const;
+const PARTICLES = { low: 160, mid: 320, high: 480 } as const;
+const STOPS = journey.map((s, i) => (i === 0 ? 0 : s.at));
 
 /** Imagens de apoio — também servem de fallback sem WebGL. */
 const STILLS: Record<string, { src: string; alt: string }> = {
-  fruto: {
-    src: "/img/lavoura-cerejas.jpg",
-    alt: "Cerejas de café vermelhas e verdes em um galho, com lavoura ao fundo",
-  },
-  colheita: {
-    src: "/img/colheita.jpg",
-    alt: "Trabalhador colhendo cerejas de café em uma peneira",
-  },
-  beneficiamento: {
-    src: "/img/beneficiamento.jpg",
-    alt: "Cerejas de café em canal de lavagem durante o beneficiamento",
-  },
-  industria: {
-    src: "/img/silos-industria.jpg",
-    alt: "Silos metálicos e sacarias de café na entrada da indústria",
-  },
-  torra: {
-    src: "/img/torrefacao-tambor.jpg",
-    alt: "Tambor de torrefação despejando grãos quentes com vapor",
-  },
-  moagem: {
-    src: "/img/moagem.jpg",
-    alt: "Café moído caindo de um moinho industrial",
-  },
-  preparo: {
-    src: "/img/preparo-coador.jpg",
-    alt: "Café sendo despejado de uma jarra de vidro em uma xícara",
-  },
-  xicara: {
-    src: "/img/servindo-xicara.jpg",
-    alt: "Café caindo em uma xícara branca, com vapor e respingos",
-  },
+  fruto: { src: "/foto/02-o-fruto.jpg", alt: "Cereja de café vermelha e madura, coberta de gotas de orvalho, ao sol da manhã" },
+  colheita: { src: "/foto/03-colheita.jpg", alt: "Cerejas de café maduras caindo do galho para um cesto de palha" },
+  beneficiamento: { src: "/foto/04-secagem.jpg", alt: "Grãos de café em pergaminho secando no terreiro ao pôr do sol" },
+  industria: { src: "/foto/05-grao-cru.jpg", alt: "Grãos de café crus, esverdeados, com o sulco central à mostra" },
+  torra: { src: "/foto/06-torra.jpg", alt: "Grão de café torrado suspenso entre brasas e outros grãos" },
+  moagem: { src: "/foto/08-moagem.jpg", alt: "Grão de café torrado se desfazendo em pó no ar" },
+  preparo: { src: "/foto/09-preparo.jpg", alt: "Água quente caindo sobre o pó de café no coador, com vapor" },
+  xicara: { src: "/foto/10-cafe-caindo.jpg", alt: "Fio de café caindo em uma xícara branca, com crema e vapor" },
 };
 
 export function CoffeeJourney() {
@@ -113,7 +90,7 @@ export function CoffeeJourney() {
             esférico da cena cobre esta camada assim que começa a renderizar. */}
         <div aria-hidden className="absolute inset-0 bg-espresso-950">
           <Image
-            src="/img/lavoura-cerejas.jpg"
+            src="/foto/02-o-fruto.jpg"
             alt=""
             fill
             sizes="100vw"
@@ -122,16 +99,15 @@ export function CoffeeJourney() {
           <span className="absolute inset-0 bg-[radial-gradient(120%_90%_at_50%_45%,transparent_20%,rgba(7,4,3,0.85)_88%)]" />
         </div>
         {webgl === true && mounted && (
-          <SceneCanvas
-            active={inView}
-            className="!absolute inset-0"
-            camera={{ position: [0.25, 0.3, 4.3], fov: 38 }}
-          >
-            <JourneyScene
+          <SceneCanvas active={inView} className="!absolute inset-0">
+            <PhotoStage
+              shots={JOURNEY_SHOTS}
+              stops={STOPS}
               progress={progress}
-              count={BEANS[tier]}
               particles={PARTICLES[tier]}
               reduced={reduced}
+              fade={0.06}
+              panelX={0.68}
             />
           </SceneCanvas>
         )}

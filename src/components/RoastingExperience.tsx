@@ -14,14 +14,14 @@ import {
 import { useMotionPref } from "@/lib/motionPref";
 import { roasting } from "@/lib/site";
 import { SceneCanvas } from "@/three/SceneCanvas";
+import { ROAST_SHOTS } from "@/three/shots";
 
-const RoastScene = dynamic(
-  () => import("@/three/RoastScene").then((m) => m.RoastScene),
+const PhotoStage = dynamic(
+  () => import("@/three/PhotoStage").then((m) => m.PhotoStage),
   { ssr: false },
 );
 
-const BEANS = { low: 140, mid: 300, high: 460 } as const;
-const PARTICLES = { low: 200, mid: 460, high: 760 } as const;
+const PARTICLES = { low: 160, mid: 320, high: 480 } as const;
 
 export function RoastingExperience() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -64,7 +64,7 @@ export function RoastingExperience() {
       >
         <div aria-hidden className="absolute inset-0">
           <Image
-            src="/img/torrefacao-tambor.jpg"
+            src="/foto/07-tambor.jpg"
             alt=""
             fill
             sizes="100vw"
@@ -73,16 +73,14 @@ export function RoastingExperience() {
           <span className="absolute inset-0 bg-[radial-gradient(120%_90%_at_50%_45%,transparent_18%,rgba(10,4,2,0.88)_88%)]" />
         </div>
         {webgl === true && mounted && (
-          <SceneCanvas
-            active={inView}
-            className="!absolute inset-0"
-            camera={{ position: [0, 1.1, 6.4], fov: 36 }}
-          >
-            <RoastScene
+          <SceneCanvas active={inView} className="!absolute inset-0">
+            <PhotoStage
+              shots={ROAST_SHOTS}
+              stops={[0]}
               progress={progress}
-              count={BEANS[tier]}
               particles={PARTICLES[tier]}
               reduced={reduced}
+              panelX={0.5}
             />
           </SceneCanvas>
         )}
@@ -193,7 +191,7 @@ function RoastFallback() {
         </div>
         <div className="relative aspect-3/4 overflow-hidden rounded-lg lg:col-span-7">
           <Image
-            src="/img/torrefacao-tambor.jpg"
+            src="/foto/07-tambor.jpg"
             alt="Tambor de torrefação despejando grãos quentes, com vapor e luz âmbar"
             fill
             sizes="(max-width: 1024px) 92vw, 55vw"

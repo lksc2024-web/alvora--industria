@@ -25,8 +25,11 @@ npm run start
 - **GSAP 3 / ScrollTrigger** — apenas para ler o progresso de cada seção
 - **Playwright** para o QA automatizado
 
-Nenhum serviço pago, nenhuma geração de imagem/vídeo por IA, nenhum asset
-externo em runtime. Toda a experiência 3D é código.
+Nenhum serviço pago e nenhum asset externo em runtime. As cenas da abertura,
+da jornada, da torrefação e da xícara usam fotografias realistas geradas pelo
+cliente no ChatGPT (`public/foto/`), animadas em WebGL pelo `PhotoStage`:
+profundidade calculada, parallax, líquido escorrendo, crema girando, vapor e
+brasas. Nenhum vídeo.
 
 ## Estrutura
 
