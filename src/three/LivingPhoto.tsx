@@ -40,6 +40,8 @@ export type LiveShot = {
   spin?: Spin;
   /** segunda rotação (bandeja de resfriamento, borda da crema) */
   churn?: Spin;
+  /** pó se espalhando a partir de um ponto (moagem) */
+  burst?: { center: XY; radius: XY; speed: number };
   /** ondas a partir de um ponto, achatadas em perspectiva */
   ripple?: { center: XY; radius: XY; amp: number; freq: number; speed: number };
   /** vapor/fumaça subindo dentro de uma caixa x0, x1, y0, y1 */
@@ -89,6 +91,12 @@ export type Direction = {
   dim?: number;
   /** força das ondas da foto da frente */
   ripple?: number;
+  /**
+   * Fotos empilhadas na vertical (índices 0..n da lista): `y` é a altura da
+   * pilha no centro da tela, em alturas de foto. Acima de 0 não há foto e a
+   * camada fica transparente, deixando ver a cena 3D.
+   */
+  stack?: { y: number; x: number; zoom: number; count: number };
 };
 
 type Props = {
@@ -164,6 +172,7 @@ struct Shot {
   vec4 cha; vec4 chb;      // segunda rotação
   vec4 rpa; vec4 rpb;      // ondas
   vec4 sma; vec4 smb;      // vapor
+  vec4 bua; vec4 bub;      // explosão de pó
   vec4 fx;                 // heat, glow, -, -
   vec4 grade;              // brilho, saturação, período, tom de torra
 };
@@ -173,6 +182,10 @@ uniform sampler2D tA;
 uniform sampler2D tB;
 uniform sampler2D tAlt;
 uniform float uMix;
+uniform float uStack;   // 1 = fotos empilhadas, a de baixo continua a de cima
+uniform float uNoA;     // acima da pilha não há foto: mostra a cena 3D por trás
+uniform float uNoB;     // última foto da pilha: nada abaixo dela
+uniform float uAmbB;
 uniform float uTime;
 uniform float uBlur;
 uniform float uDim;
@@ -216,6 +229,17 @@ vec2 steamD(vec2 p, vec4 a, vec4 b, float t) {
   return vec2(w * b.y, -1.0) * b.x * m;
 }
 
+vec2 burstD(vec2 p, vec4 a, vec4 b, float t) {
+  if (b.x == 0.0) return vec2(0.0);
+  vec2 q = (p - a.xy) / a.zw;
+  float r = length(q);
+  float m = smoothstep(1.0, 0.55, r) * smoothstep(0.05, 0.25, r);
+  // as partículas mais longe do centro voam mais rápido e giram um pouco
+  vec2 dir = q / max(r, 1e-4);
+  dir = vec2(dir.x - dir.y * 0.25, dir.y + dir.x * 0.25);
+  return dir * a.zw * b.x * m * (0.5 + r);
+}
+
 vec2 rippleO(vec2 p, vec4 a, vec4 b, float t) {
   if (b.x == 0.0) return vec2(0.0);
   vec2 q = (p - a.xy) / a.zw;
@@ -237,7 +261,9 @@ vec3 look(sampler2D tex, vec2 p, Shot S, float t, float bias) {
   }
   vec2 D = streamD(p, S.s0a, S.s0b) + streamD(p, S.s1a, S.s1b)
          + spinD(p, S.spa, S.spb) + spinD(p, S.cha, S.chb)
-         + steamD(p, S.sma, S.smb, t);
+         + steamD(p, S.sma, S.smb, t) + burstD(p, S.bua, S.bub, t);
+  // perto das bordas da foto o fluxo some: nada é puxado de fora da imagem
+  D *= smoothstep(0.0, 0.1, p.y) * smoothstep(1.0, 0.9, p.y) * smoothstep(0.0, 0.06, p.x) * smoothstep(1.0, 0.94, p.x);
   if (dot(D, D) < 1e-10) return tx(tex, p, bias);
   float T = max(S.grade.z, 0.1);
   float ph = fract(t / T + noise(p * 4.0) * 0.7 + noise(p * 11.0) * 0.3);
@@ -314,17 +340,30 @@ void main() {
     inside = 1.0 - smoothstep(-0.002, 0.002, edge);
   }
 
-  vec3 col = shotColor(tA, c, uA, t, true);
-  if (uMix > 0.001) {
-    vec3 colB = shotColor(tB, c, uB, t, false);
-    float n = noise(c * vec2(5.0, 8.0) + 3.0) * 0.6 + noise(c * 23.0) * 0.4;
-    col = mix(col, colB, smoothstep(n - 0.25, n + 0.25, uMix * 1.5 - 0.25));
+  vec3 col = vec3(0.0);
+  float alpha = 1.0;
+  if (uStack > 0.5) {
+    // emenda entre a base de uma foto e o topo da seguinte, com borda irregular
+    float yA = uA.view.y + (c.y - 0.5) / uA.view.z;
+    float xA = uA.view.x + (c.x - 0.5) / uA.view.z;
+    float wob = (noise(vec2(xA * 5.0, yA * 3.0) + 1.3) - 0.5) * 0.06 + (noise(vec2(xA * 17.0, 2.0)) - 0.5) * 0.02;
+    float w = uNoB > 0.5 ? 0.0 : smoothstep(0.94, 1.06, yA + wob);
+    if (w < 0.999 && uNoA < 0.5) col = shotColor(tA, c, uA, t, true);
+    if (w > 0.001) col = mix(col, shotColor(tB, c, uB, t, false), w);
+    if (uNoA > 0.5) alpha = w;
+  } else {
+    col = shotColor(tA, c, uA, t, true);
+    if (uMix > 0.001) {
+      vec3 colB = shotColor(tB, c, uB, t, false);
+      float n = noise(c * vec2(5.0, 8.0) + 3.0) * 0.6 + noise(c * 23.0) * 0.4;
+      col = mix(col, colB, smoothstep(n - 0.25, n + 0.25, uMix * 1.5 - 0.25));
+    }
   }
 
   if (uPanel > 0.5) {
     vec2 cc = coverUv(vS);
     cc.y = 1.0 - cc.y;
-    vec3 amb = mix(tx(tA, cc, 6.0), tx(tB, cc, 6.0), smoothstep(0.2, 0.8, uMix)) * 0.3;
+    vec3 amb = mix(tx(tA, cc, 6.0), tx(tB, cc, 6.0), uAmbB) * 0.3;
     vec2 ps = panelSize(); vec2 po = panelOrigin();
     vec2 l = (vS - po) / ps;
     vec2 dd = max(abs(l - 0.5) - 0.5, 0.0) * ps * vec2(uAspect, 1.0);
@@ -335,7 +374,7 @@ void main() {
   vec2 v = vS - 0.5;
   col *= 1.0 - dot(v, v) * 0.5;
   col *= 1.0 - uDim * 0.6;
-  gl_FragColor = vec4(col, 1.0);
+  gl_FragColor = vec4(col, alpha);
 }
 `;
 
@@ -488,11 +527,16 @@ const emptyShot = () => ({
   view: new THREE.Vector4(0.5, 0.5, 1, 0),
   s0a: V(), s0b: V(), s1a: V(), s1b: V(),
   spa: V(), spb: V(), cha: V(), chb: V(),
-  rpa: V(), rpb: V(), sma: V(), smb: V(),
+  rpa: V(), rpb: V(), sma: V(), smb: V(), bua: V(), bub: V(),
   fx: V(),
   grade: new THREE.Vector4(1, 1, 1, 0),
 });
 type ShotU = ReturnType<typeof emptyShot>;
+
+const smoothstep01 = (x: number, w: number) => {
+  const t = Math.min(1, Math.max(0, x / Math.max(w, 1e-6)));
+  return t * t * (3 - 2 * t);
+};
 
 /** mantém o enquadramento dentro da foto */
 function frame(f: XY, z: number): XY {
@@ -522,6 +566,10 @@ function writeShot(u: ShotU, s: LiveShot, focus: XY, zoom: number, heat: number,
     u.sma.set(...s.steam.box);
     u.smb.set(s.steam.speed, s.steam.wiggle ?? 0.6, s.steam.notch?.[0] ?? 0, s.steam.notch?.[1] ?? 0);
   } else u.smb.set(0, 0, 0, 0);
+  if (s.burst) {
+    u.bua.set(s.burst.center[0], s.burst.center[1], s.burst.radius[0], s.burst.radius[1]);
+    u.bub.set(s.burst.speed, 0, 0, 0);
+  } else u.bub.set(0, 0, 0, 0);
   u.fx.set((s.heat ?? 0) * heat, (s.glow ?? 0) * heat, 0, 0);
   u.grade.set(s.grade?.[0] ?? 1, s.grade?.[1] ?? 1, s.period ?? 1.2, tone);
 }
@@ -569,6 +617,7 @@ export function LivingPhoto({
         fragmentShader: FRAG,
         depthTest: false,
         depthWrite: false,
+        transparent: true,
         uniforms: {
           ...common,
           uA: { value: emptyShot() },
@@ -577,6 +626,10 @@ export function LivingPhoto({
           tB: { value: tex.img[Math.min(1, tex.img.length - 1)] },
           tAlt: { value: tex.alt.find(Boolean) ?? tex.img[0] },
           uMix: { value: 0 },
+          uStack: { value: 0 },
+          uNoA: { value: 0 },
+          uNoB: { value: 0 },
+          uAmbB: { value: 0 },
           uBlur: { value: 0 },
           uDim: { value: 0 },
           uCut: { value: -1 },
@@ -650,6 +703,9 @@ export function LivingPhoto({
 
   const smooth = useRef(0);
   const shown = useRef(0);
+  const plateRef = useRef<THREE.Mesh>(null);
+  const beansRef = useRef<THREE.Points>(null);
+  const partRef = useRef<THREE.Points>(null);
 
   useFrame((_, delta) => {
     const dt = Math.min(delta, 0.05);
@@ -666,25 +722,65 @@ export function LivingPhoto({
     common.uPanelX.value = aspect < 1.3 ? Math.max(panelX, 0.7) : panelX;
 
     const d = direct(p);
-    const ia = d.a;
-    const ib = d.b ?? d.a;
+    const u = material.uniforms;
+    let ia: number, ib: number, mix: number;
+    let fa: XY, fb: XY, za: number, zb: number;
+    let ambB = 0;
+    let fade = 1;
+    // índice da foto (na pilha) e o centro de vista dela, para grãos e partículas
+    let viewOf: (i: number) => [number, number, number];
+    if (d.stack) {
+      const { y, x, zoom, count } = d.stack;
+      za = zb = Math.max(1, zoom);
+      const h = 0.5 / za;
+      const xx = Math.min(1 - h, Math.max(h, x));
+      const k = Math.floor(y - 0.5);
+      ia = Math.max(0, k);
+      ib = Math.min(count - 1, k + 1);
+      fa = [xx, y - k];
+      fb = [xx, y - k - 1];
+      mix = 0;
+      u.uStack.value = 1;
+      u.uNoA.value = k < 0 ? 1 : 0;
+      u.uNoB.value = k + 1 >= count ? 1 : 0;
+      ambB = smoothstep01(y - k - 1 + h, 2 * h);
+      const seam = k + 1;
+      fade = Math.min(1, Math.abs(y - seam) / 0.3);
+      viewOf = (i) => [xx, y - i, za];
+      // tudo acima da pilha: a camada inteira some
+      const off = y + h < -0.08;
+      if (plateRef.current) plateRef.current.visible = !off;
+      if (beansRef.current) beansRef.current.visible = !off;
+      if (partRef.current) partRef.current.visible = !off;
+    } else {
+      ia = d.a;
+      ib = d.b ?? d.a;
+      za = Math.max(1, d.zoomA ?? 1);
+      zb = Math.max(1, d.zoomB ?? 1);
+      fa = frame(d.focusA ?? [0.5, 0.5], za);
+      fb = frame(d.focusB ?? fa, zb);
+      mix = ready.current[ib] ? d.mix ?? 0 : 0;
+      ambB = smoothstep01(mix - 0.2, 0.6);
+      u.uStack.value = 0;
+      u.uNoA.value = 0;
+      u.uNoB.value = 0;
+      viewOf = (i) => (i === ib && mix > 0.5 ? [fb[0], fb[1], zb] : [fa[0], fa[1], za]);
+      if (plateRef.current) plateRef.current.visible = true;
+      if (beansRef.current) beansRef.current.visible = true;
+      if (partRef.current) partRef.current.visible = true;
+    }
     const A = shots[ia];
     const B = shots[ib];
-    const u = material.uniforms;
     u.tA.value = tex.img[ia];
     u.tB.value = tex.img[ib];
     if (tex.alt[ia]) u.tAlt.value = tex.alt[ia];
-    const mix = ready.current[ib] ? d.mix ?? 0 : 0;
     u.uMix.value = mix;
+    u.uAmbB.value = ambB;
     u.uBlur.value = d.blur ?? 0;
     u.uDim.value = d.dim ?? 0;
     u.uCut.value = tex.alt[ia] && d.cut !== undefined ? d.cut : -1;
-    const za = Math.max(1, d.zoomA ?? 1);
-    const fa = frame(d.focusA ?? [0.5, 0.5], za);
-    const zb = Math.max(1, d.zoomB ?? 1);
-    const fb = frame(d.focusB ?? fa, zb);
     writeShot(u.uA.value, A, fa, za, d.heat ?? 1, d.tone ?? 0, d.ripple ?? 1);
-    writeShot(u.uB.value, B, fb, zb, d.heat ?? 1, 0);
+    writeShot(u.uB.value, B, fb, zb, d.heat ?? 1, ib === 0 ? d.tone ?? 0 : 0);
 
     shown.current = damp(shown.current, ready.current[ia] ? 1 : 0, 4, dt);
 
@@ -695,25 +791,28 @@ export function LivingPhoto({
       : Math.max(size.width, size.height * IMG_ASPECT);
 
     // partículas da foto que está na frente
-    const front = mix > 0.5 ? B : A;
+    const frontIdx = d.stack ? Math.max(0, Math.min(shots.length - 1, Math.floor(d.stack.y))) : mix > 0.5 ? ib : ia;
+    const front = shots[frontIdx];
     const pm = partMat.uniforms;
     pm.uMode.value = MODE[front.particles ?? "nenhuma"];
     pm.uEmit.value.set(front.emitter?.[0] ?? 0.5, front.emitter?.[1] ?? 0.5);
-    const fv = mix > 0.5 ? fb : fa;
-    pm.uView.value.set(fv[0], fv[1], mix > 0.5 ? zb : za, 0);
+    pm.uView.value.set(...viewOf(frontIdx), 0);
     pm.uPx.value = pr * (photoW / 520);
-    pm.uFadeIn.value = shown.current * (1 - Math.min(1, (d.blur ?? 0) * 2)) * (d.heat ?? 1);
+    pm.uFadeIn.value = shown.current * fade * (1 - Math.min(1, (d.blur ?? 0) * 2)) * (d.heat ?? 1);
 
+    // grãos caindo: só a foto que tem a borda do tambor
     const bm = beanMat.uniforms;
-    const bean = A.beans;
-    bm.uAmount.value = bean ? (d.beans ?? 1) * shown.current * (1 - mix) : 0;
+    const bi = shots.findIndex((s) => s.beans);
+    const bean = bi >= 0 ? shots[bi].beans : undefined;
+    const beanOn = bean && (bi === ia || bi === ib);
+    bm.uAmount.value = beanOn ? (d.beans ?? 1) * shown.current * (d.stack ? 1 : 1 - mix) : 0;
     if (bean) {
       bm.uLip.value.set(...bean.lip);
       bm.uLand.value.set(...bean.land);
       bm.uGrav.value = bean.gravity;
       bm.uSize.value = bean.size;
+      bm.uView.value.set(...viewOf(bi), 0);
     }
-    bm.uView.value.set(fa[0], fa[1], za, 0);
     bm.uPhotoPx.value = photoW * pr;
     bm.uTime.value = t;
     pm.uTime.value = t;
@@ -721,11 +820,11 @@ export function LivingPhoto({
 
   return (
     <>
-      <mesh material={material} frustumCulled={false} renderOrder={0}>
+      <mesh ref={plateRef} material={material} frustumCulled={false} renderOrder={5}>
         <planeGeometry args={[2, 2]} />
       </mesh>
-      <points geometry={beanGeo} material={beanMat} frustumCulled={false} renderOrder={1} />
-      <points geometry={partGeo} material={partMat} frustumCulled={false} renderOrder={2} />
+      <points ref={beansRef} geometry={beanGeo} material={beanMat} frustumCulled={false} renderOrder={6} />
+      <points ref={partRef} geometry={partGeo} material={partMat} frustumCulled={false} renderOrder={7} />
     </>
   );
 }

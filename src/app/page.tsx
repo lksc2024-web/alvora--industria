@@ -1,5 +1,4 @@
 import { CoffeeJourney } from "@/components/CoffeeJourney";
-import { CoffeePour } from "@/components/CoffeePour";
 import { CoffeeThread } from "@/components/CoffeeThread";
 import { ConversionSection } from "@/components/ConversionSection";
 import { HeroSection } from "@/components/HeroSection";
@@ -7,7 +6,6 @@ import { HumanExperience } from "@/components/HumanExperience";
 import { IndustrySection } from "@/components/IndustrySection";
 import { ProductShowcase } from "@/components/ProductShowcase";
 import { RitualExperience } from "@/components/RitualExperience";
-import { RoastingExperience } from "@/components/RoastingExperience";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 
@@ -20,16 +18,13 @@ export default function Home() {
         {/* Ato I — o nascimento do café */}
         <HeroSection />
 
-        {/* Ato II — a transformação, da origem à xícara */}
+        {/* Ato II — a transformação inteira, da cereja à xícara, numa descida só:
+            fruto, semente, tambor, moagem, preparo e o café caindo na xícara */}
         <CoffeeJourney />
 
-        {/* Momento 01 — torrefação imersiva */}
-        <RoastingExperience />
-
-        {/* Ato III + Ato IV — o café servido e o fio que costura as duas seções */}
+        {/* Ato IV — o fio que desce da xícara e costura a seção humana */}
         <div className="relative">
           <CoffeeThread />
-          <CoffeePour />
           <HumanExperience />
         </div>
 

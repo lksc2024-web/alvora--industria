@@ -33,6 +33,13 @@ import {
   createSwarmMaterial,
 } from "./photoSprites";
 import { useStudioEnv } from "./useStudioEnv";
+import {
+  ACT1_END,
+  act1Progress,
+  fallProgress,
+  towerPhotoWidth,
+  towerToScreen,
+} from "./livingScenes";
 
 const FOLHA = () => photoTexture("/textura/folha.jpg");
 
@@ -358,9 +365,18 @@ type Props = {
   count: number;
   particles: number;
   reduced: boolean;
+  /**
+   * Seção contínua: a rolagem inteira vai até a xícara. Esta cena faz só o
+   * começo (cereja → grão); depois o grão cai e a câmera desce para as fotos.
+   */
+  descent?: boolean;
 };
 
-export function JourneyScene({ progress, count, particles, reduced }: Props) {
+const LAND: [number, number] = [0.43, 0.27];
+const NDC = new THREE.Vector3();
+const NAT = new THREE.Vector3();
+
+export function JourneyScene({ progress, count, particles, reduced, descent = false }: Props) {
   const camera = useThree((s) => s.camera) as THREE.PerspectiveCamera;
   const size = useThree((s) => s.size);
   const gl = useThree((s) => s.gl);
@@ -425,6 +441,7 @@ export function JourneyScene({ progress, count, particles, reduced }: Props) {
     }));
   }, []);
 
+  const rootRef = useRef<THREE.Group>(null);
   const heroRef = useRef<THREE.Group>(null);
   const beanRef = useRef<THREE.Mesh>(null);
   const shardsRef = useRef<THREE.Mesh>(null);
@@ -480,11 +497,28 @@ export function JourneyScene({ progress, count, particles, reduced }: Props) {
   useFrame((_, delta) => {
     const dt = Math.min(delta, 0.05);
     const target = clamp01(progress.current);
-    // amortecimento: o scroll do usuário é discreto, a câmera não pode ser
-    smoothed.current = reduced
-      ? target
-      : damp(smoothed.current, target, 7.5, dt);
-    const p = smoothed.current;
+    let p: number;
+    let P = 0;
+    let fall = 0;
+    if (descent) {
+      // mesmo amortecimento das fotos vivas, para a emenda andar junto
+      smoothed.current = damp(smoothed.current, target, 6, dt);
+      P = smoothed.current;
+      p = act1Progress(P);
+      fall = fallProgress(P);
+      const gone = fall >= 0.999;
+      if (rootRef.current) rootRef.current.visible = !gone;
+      if (gone) {
+        if (camera.view?.enabled) camera.clearViewOffset();
+        return;
+      }
+    } else {
+      // amortecimento: o scroll do usuário é discreto, a câmera não pode ser
+      smoothed.current = reduced
+        ? target
+        : damp(smoothed.current, target, 7.5, dt);
+      p = smoothed.current;
+    }
     // Em movimento reduzido o relógio para, mas a cena não congela: o "tempo"
     // passa a vir da própria rolagem. Nada se move sem que a pessoa mova.
     const time = reduced ? p * 9 : performance.now() / 1000;
@@ -511,6 +545,22 @@ export function JourneyScene({ progress, count, particles, reduced }: Props) {
     if (Math.abs(camera.fov - fov) > 0.01) {
       camera.fov = fov;
       camera.updateProjectionMatrix();
+    }
+
+    // A câmera desce junto com o grão: o mundo inteiro sobe exatamente o que
+    // a borda de cima das fotos sobe, como se fosse uma só imagem.
+    if (descent && fall > 0) {
+      if (camera.view?.enabled) camera.clearViewOffset();
+      camera.updateMatrixWorld();
+      sampleVec3(HERO_POS, p, NAT);
+      NAT.project(camera);
+      const W = size.width;
+      const H = size.height;
+      const e0 = towerToScreen(0, 0, ACT1_END, W, H)[1];
+      const e = towerToScreen(0, 0, P, W, H)[1];
+      camera.setViewOffset(W, H, 0, (e0 - e) * H, W, H);
+    } else if (camera.view?.enabled) {
+      camera.clearViewOffset();
     }
 
     /* --- atmosfera ----------------------------------------------------- */
@@ -556,9 +606,11 @@ export function JourneyScene({ progress, count, particles, reduced }: Props) {
     const split = smoothstep(SPLIT_A, 0.235, p);
     const splitOn = p > SPLIT_A;
     const breakT = smoothstep(0.675, 0.795, p);
+    // na queda, a torra continua: o grão chega ao tambor já cor de canela
+    const roastNow = descent ? lerp(state.roast, 0.62, smoothstep(0.1, 0.9, fall)) : state.roast;
     [...halfMats, beanSprite, swarmMat].forEach((m) => {
       m.uniforms.uTime.value = time;
-      m.uniforms.uRoast.value = state.roast;
+      m.uniforms.uRoast.value = roastNow;
     });
     swarmMat.uniforms.uStage.value = smoothstep(0.13, 0.26, p);
     shardsMat.uniforms.uBreak.value = breakT;
@@ -580,7 +632,26 @@ export function JourneyScene({ progress, count, particles, reduced }: Props) {
       if (bean) {
         bean.visible = splitOn && breakT < 0.25;
         bean.scale.setScalar((0.6 + 0.4 * split) * (1 + state.roast * 0.06));
-        beanSprite.uniforms.uOpacity.value = 1 - smoothstep(0.0, 0.25, breakT);
+        beanSprite.uniforms.uOpacity.value = (1 - smoothstep(0.0, 0.25, breakT)) * (1 - smoothstep(0.88, 1.0, fall));
+      }
+
+      // queda: o grão vai da posição dele até a borda do tambor, encolhendo
+      // até o tamanho dos grãos da cascata, e some dentro dela
+      if (descent && fall > 0) {
+        const W = size.width;
+        const H = size.height;
+        const [lx, ly] = towerToScreen(LAND[0], LAND[1], P, W, H);
+        const tx = lx * 2 - 1;
+        const ty = Math.max(-0.8, 1 - ly * 2);
+        const k = smoothstep(0.15, 1, fall);
+        const kk = k * k * (3 - 2 * k);
+        NDC.set(lerp(NAT.x, tx, kk), lerp(NAT.y, ty, kk), NAT.z).unproject(camera);
+        g.position.copy(NDC);
+        const dist = camera.position.distanceTo(NDC);
+        const visH = 2 * dist * Math.tan(((camera.fov * Math.PI) / 180) / 2);
+        const want = (0.06 * towerPhotoWidth(P, W, H) * visH) / (0.85 * 2.3);
+        const s0 = Math.max(0.0001, base * 0.92);
+        g.scale.setScalar(lerp(s0, want, smoothstep(0.3, 1, fall)));
       }
       const shards = shardsRef.current;
       if (shards) {
@@ -694,7 +765,7 @@ export function JourneyScene({ progress, count, particles, reduced }: Props) {
   });
 
   return (
-    <>
+    <group ref={rootRef}>
       <ambientLight ref={ambientRef} intensity={0.35} />
       <directionalLight ref={keyRef} position={[2.6, 3.2, 2.4]} intensity={2.8} />
       <directionalLight ref={rimRef} position={[-3.2, 1.2, -2.8]} intensity={1.2} />
@@ -759,15 +830,15 @@ export function JourneyScene({ progress, count, particles, reduced }: Props) {
 
       {/* fruto / semente / grão — o fio condutor da narrativa */}
       <group ref={heroRef}>
-        <mesh ref={beanRef} geometry={spriteGeo} material={beanSprite} renderOrder={2} />
+        <mesh ref={beanRef} geometry={spriteGeo} material={beanSprite} renderOrder={20} />
         {/* as metades giram em torno da borda de fora, como portas */}
         <group ref={doorL} position={[-1.15, 0, 0]}>
-          <mesh geometry={spriteGeo} material={halfMats[0]} position={[1.15, 0, 0.01]} renderOrder={3} />
+          <mesh geometry={spriteGeo} material={halfMats[0]} position={[1.15, 0, 0.01]} renderOrder={21} />
         </group>
         <group ref={doorR} position={[1.15, 0, 0]}>
-          <mesh geometry={spriteGeo} material={halfMats[1]} position={[-1.15, 0, 0.01]} renderOrder={3} />
+          <mesh geometry={spriteGeo} material={halfMats[1]} position={[-1.15, 0, 0.01]} renderOrder={21} />
         </group>
-        <mesh ref={shardsRef} geometry={shardsGeo} material={shardsMat} frustumCulled={false} renderOrder={4} />
+        <mesh ref={shardsRef} geometry={shardsGeo} material={shardsMat} frustumCulled={false} renderOrder={22} />
       </group>
 
       {/* poeira, brasa, pó e vapor */}
@@ -797,6 +868,6 @@ export function JourneyScene({ progress, count, particles, reduced }: Props) {
         <cylinderGeometry args={[0.062, 0.05, 2.2, 24, 18, true]} />
         <primitive object={streamMat} attach="material" />
       </mesh>
-    </>
+    </group>
   );
 }

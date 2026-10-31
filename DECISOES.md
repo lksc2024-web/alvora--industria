@@ -308,3 +308,24 @@ agora mostram a própria foto realista, e o movimento acontece dentro dela
 - Técnica: flowmap em duas fases, com a fase desencontrada por ruído para não
   pulsar. Nada de vídeo; o peso é o da própria foto.
 - `RoastScene` e `PourScene` saíram.
+
+### Uma descida só, da cereja à xícara (31/10/2026)
+
+Jornada, torrefação e xícara eram três seções, e a passagem entre elas parecia
+um pulo. Agora é uma seção só (`CoffeeJourney`), e a rolagem é gravidade:
+
+- **Começo (0 a 0,33):** a cena 3D com os recortes, como estava: a cereja se
+  abre, a semente aparece, o lote vira grão cru e a torra começa.
+- **Queda (0,33 a 0,41):** o grão cai e a câmera desce com ele. O mundo 3D
+  sobe exatamente o quanto sobe a borda de cima das fotos (`setViewOffset`),
+  então as duas camadas se movem como uma imagem só. O grão encolhe até o
+  tamanho dos grãos da cascata e entra nela.
+- **Descida pelas fotos vivas:** tambor, moagem, preparo e o fio na xícara
+  ficam empilhados como andares (`stack` em `LivingPhoto`). As emendas ficam
+  nas partes desfocadas e têm borda irregular; sempre há material cruzando a
+  emenda (cascata, pó, água, o fio). A torra acontece dentro do tambor, com as
+  temperaturas na legenda.
+- **Final:** o fio termina, a câmera mergulha na crema e sai na xícara servida.
+- As seções `RoastingExperience` e `CoffeePour` saíram; `#torrefacao` e
+  `#xicara` viraram âncoras dentro da descida.
+- Linha do tempo e medidas das fotos em `src/three/livingScenes.ts`.

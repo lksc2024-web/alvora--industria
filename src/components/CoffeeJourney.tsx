@@ -10,18 +10,62 @@ import {
   useQuality,
   useScrollProgress,
   useWebGL,
+  type ProgressRef,
 } from "@/lib/hooks";
 import { useMotionPref } from "@/lib/motionPref";
-import { journey } from "@/lib/site";
+import { journey, roasting } from "@/lib/site";
 import { SceneCanvas } from "@/three/SceneCanvas";
 
-const JourneyScene = dynamic(
-  () => import("@/three/JourneyScene").then((m) => m.JourneyScene),
+/*
+ * A jornada inteira numa seção só: a cena 3D com os recortes faz o começo
+ * (cereja → semente → grão), o grão cai, e a câmera desce pelas fotos vivas
+ * empilhadas — tambor, moagem, preparo — até o fio cair na xícara.
+ */
+const Descent = dynamic(
+  () =>
+    Promise.all([
+      import("@/three/JourneyScene"),
+      import("@/three/LivingPhoto"),
+      import("@/three/livingScenes"),
+    ]).then(([j, l, s]) =>
+      function Descent(props: {
+        progress: ProgressRef;
+        count: number;
+        particles: number;
+        photoParticles: number;
+        reduced: boolean;
+      }) {
+        return (
+          <>
+            <j.JourneyScene
+              progress={props.progress}
+              count={props.count}
+              particles={props.particles}
+              reduced={props.reduced}
+              descent
+            />
+            <l.LivingPhoto
+              shots={s.DESCENT_SHOTS}
+              direct={s.descentDirection}
+              progress={props.progress}
+              reduced={props.reduced}
+              particles={props.photoParticles}
+              beans={props.count > 300 ? 90 : 60}
+            />
+          </>
+        );
+      },
+    ),
   { ssr: false },
 );
 
 const BEANS = { low: 170, mid: 360, high: 560 } as const;
 const PARTICLES = { low: 220, mid: 520, high: 900 } as const;
+const PHOTO_PARTICLES = { low: 160, mid: 280, high: 400 } as const;
+
+/** trecho do tambor em que as etapas da torra aparecem na legenda */
+const ROAST_FROM = 0.41;
+const ROAST_TO = 0.59;
 
 /** Imagens de apoio — também servem de fallback sem WebGL. */
 const STILLS: Record<string, { src: string; alt: string }> = {
@@ -48,6 +92,7 @@ export function CoffeeJourney() {
   const webgl = useWebGL();
   const tier = useQuality();
   const [active, setActive] = useDistinctState(0);
+  const [roastStep, setRoastStep] = useDistinctState(-1);
   const barRef = useRef<HTMLSpanElement>(null);
 
   const onProgress = useCallback(
@@ -57,11 +102,16 @@ export function CoffeeJourney() {
         if (p >= journey[i].at - 0.01) idx = i;
       }
       setActive(idx);
+      setRoastStep(
+        p < ROAST_FROM || p > ROAST_TO + 0.02
+          ? -1
+          : Math.min(3, Math.floor(((p - ROAST_FROM) / (ROAST_TO - ROAST_FROM)) * 4)),
+      );
       if (barRef.current) {
         barRef.current.style.transform = `scaleY(${Math.max(0.02, p)})`;
       }
     },
-    [setActive],
+    [setActive, setRoastStep],
   );
 
   const progress = useScrollProgress(sectionRef, onProgress);
@@ -77,9 +127,12 @@ export function CoffeeJourney() {
     <section
       id="jornada"
       ref={sectionRef}
-      className="relative h-[620vh] md:h-[760vh]"
+      className="relative h-[1500vh] md:h-[1700vh]"
       aria-label="A transformação do café, da origem à xícara"
     >
+      {/* âncoras do menu: a torrefação e a xícara agora são trechos da descida */}
+      <span id="torrefacao" aria-hidden className="absolute left-0 top-[36%] h-px w-px" />
+      <span id="xicara" aria-hidden className="absolute left-0 top-[80%] h-px w-px" />
       <div
         ref={viewRef}
         className="sticky top-0 h-[100svh] min-h-[520px] w-full overflow-hidden"
@@ -103,10 +156,11 @@ export function CoffeeJourney() {
             className="!absolute inset-0"
             camera={{ position: [0.25, 0.3, 4.3], fov: 38 }}
           >
-            <JourneyScene
+            <Descent
               progress={progress}
               count={BEANS[tier]}
               particles={PARTICLES[tier]}
+              photoParticles={PHOTO_PARTICLES[tier]}
               reduced={reduced}
             />
           </SceneCanvas>
@@ -157,6 +211,20 @@ export function CoffeeJourney() {
             >
               {scene.body}
             </p>
+            {roastStep >= 0 && (
+              <p
+                key={`r-${roastStep}`}
+                className="mt-5 flex max-w-lg animate-[fade-up_0.7s_var(--ease-out-expo)_both] items-baseline gap-3 border-t border-white/12 pt-4 text-[0.8rem] text-cream-200/75"
+              >
+                <span className="eyebrow !tracking-[0.25em] text-gold-300">
+                  {roasting.steps[roastStep].label}
+                </span>
+                <span className="font-display text-base text-gold-200">
+                  {roasting.steps[roastStep].temp}
+                </span>
+                <span className="hidden sm:inline">{roasting.steps[roastStep].note}</span>
+              </p>
+            )}
           </div>
         </div>
 
