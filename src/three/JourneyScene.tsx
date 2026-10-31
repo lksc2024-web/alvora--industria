@@ -24,7 +24,14 @@ import {
   createParticleMaterial,
   createStreamMaterial,
 } from "./shaders";
+import { applyBackdropPhoto, BG, photoTexture, stageAt } from "./photoTextures";
 import { useStudioEnv } from "./useStudioEnv";
+
+const FOLHA = () => photoTexture("/textura/folha.jpg");
+
+/** As fotos atrás de cada uma das oito etapas (mesma ordem de `journey`). */
+const JOURNEY_BG = [BG.fruto, BG.colheita, BG.secagem, BG.cru, BG.torra, BG.moagem, BG.preparo, BG.xicara];
+const JOURNEY_STOPS = [0, 0.12, 0.25, 0.38, 0.5, 0.64, 0.78, 0.9];
 import type { Keyframe } from "./util";
 import {
   clamp01,
@@ -348,6 +355,7 @@ type Props = {
 export function JourneyScene({ progress, count, particles, reduced }: Props) {
   const camera = useThree((s) => s.camera) as THREE.PerspectiveCamera;
   const size = useThree((s) => s.size);
+  const gl = useThree((s) => s.gl);
   useStudioEnv(ENV_BANDS, ENV_BASE);
 
   const geo = useMemo(
@@ -479,6 +487,10 @@ export function JourneyScene({ progress, count, particles, reduced }: Props) {
     (bu.uGlowColor.value as THREE.Color).copy(mood.glowColor);
     bu.uGlow.value = mood.glow;
     bu.uTime.value = time;
+    {
+      const st = stageAt(p, JOURNEY_STOPS, 0.05);
+      applyBackdropPhoto(backdropMat, JOURNEY_BG[st.i], JOURNEY_BG[st.j], st.mix, gl);
+    }
 
     if (ambientRef.current) ambientRef.current.intensity = mood.ambient;
     if (keyRef.current) {
@@ -629,7 +641,8 @@ export function JourneyScene({ progress, count, particles, reduced }: Props) {
         {leaves.map((l, i) => (
           <mesh key={i} geometry={leafGeo} position={l.pos} rotation={l.rot} scale={l.scale}>
             <meshStandardMaterial
-              color={i % 3 === 0 ? "#3d7342" : "#285432"}
+              map={FOLHA()}
+                color={i % 2 === 0 ? "#ffffff" : "#c9dcc2"}
               roughness={0.52}
               metalness={0}
               envMapIntensity={1.4}
@@ -684,7 +697,9 @@ export function JourneyScene({ progress, count, particles, reduced }: Props) {
       <group ref={cupRef} visible={false} position={[0, -1.25, 0]}>
         <mesh geometry={saucerGeo} position={[0, -0.03, 0]}>
           <meshPhysicalMaterial
-            color="#efe6d8"
+            color="#fbf3e6"
+            emissive="#3b2a1a"
+            emissiveIntensity={0.55}
             roughness={0.28}
             metalness={0.02}
             clearcoat={0.8}
@@ -695,7 +710,9 @@ export function JourneyScene({ progress, count, particles, reduced }: Props) {
         </mesh>
         <mesh geometry={cupGeo}>
           <meshPhysicalMaterial
-            color="#f2e9dc"
+            color="#fbf3e6"
+            emissive="#3b2a1a"
+            emissiveIntensity={0.55}
             roughness={0.24}
             metalness={0.02}
             clearcoat={0.9}
@@ -709,7 +726,9 @@ export function JourneyScene({ progress, count, particles, reduced }: Props) {
         <mesh position={[0.78, 0.5, 0]} rotation={[0, 0, -0.1]}>
           <torusGeometry args={[0.24, 0.045, 12, 40, Math.PI * 1.25]} />
           <meshPhysicalMaterial
-            color="#f2e9dc"
+            color="#fbf3e6"
+            emissive="#3b2a1a"
+            emissiveIntensity={0.55}
             roughness={0.24}
             metalness={0.02}
             clearcoat={0.9}

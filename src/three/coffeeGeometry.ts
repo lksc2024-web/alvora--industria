@@ -152,6 +152,8 @@ export function buildMorphGeometry(
   geo.setAttribute("aCherryN", new THREE.BufferAttribute(cherryN, 3));
   geo.setAttribute("aBeanN", new THREE.BufferAttribute(beanN, 3));
   geo.setAttribute("aGroove", new THREE.BufferAttribute(groove, 1));
+  // direção original na esfera: é por ela que a foto do fruto/grão é projetada
+  geo.setAttribute("aDir", new THREE.BufferAttribute((pos.array as Float32Array).slice(), 3));
 
   geo.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 1.35);
   geo.boundingBox = new THREE.Box3(
@@ -227,6 +229,12 @@ export function buildLeafGeometry() {
     pos.setZ(i, z);
   }
   pos.needsUpdate = true;
+  // uv cobre a folha inteira: nervura no centro (u = 0.5), base embaixo
+  const uv = geo.getAttribute("uv") as THREE.BufferAttribute;
+  for (let i = 0; i < uv.count; i++) {
+    uv.setXY(i, 0.5 + pos.getX(i) / 0.7, pos.getY(i) / 1.6);
+  }
+  uv.needsUpdate = true;
   geo.computeVertexNormals();
   geo.translate(0, -0.1, 0);
   return geo;

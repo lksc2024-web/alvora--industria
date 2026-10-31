@@ -1,5 +1,7 @@
 import * as THREE from "three";
 
+import { photoTexture } from "./photoTextures";
+
 /** Ruído de gradiente compartilhado por todos os shaders da experiência. */
 export const NOISE_GLSL = /* glsl */ `
 vec3 aln_hash3( vec3 p ) {
@@ -56,6 +58,16 @@ export function createBackdropMaterial(top = "#120b07", bottom = "#060403") {
       uGlow: { value: 0.5 },
       uTime: { value: 0 },
       uGrain: { value: 0.035 },
+      // foto real ao fundo, desfocada (troca suave entre duas)
+      tPhotoA: { value: null as THREE.Texture | null },
+      tPhotoB: { value: null as THREE.Texture | null },
+      uRectA: { value: new THREE.Vector4(0, 0, 1, 1) },
+      uRectB: { value: new THREE.Vector4(0, 0, 1, 1) },
+      uPhotoMix: { value: 0 },
+      uPhotoAmt: { value: 0 },
+      uPhotoBlur: { value: 3 },
+      uPhotoGain: { value: 0.8 },
+      uRes: { value: new THREE.Vector2(1, 1) },
     },
     vertexShader: /* glsl */ `
       varying vec3 vDir;
@@ -73,7 +85,27 @@ export function createBackdropMaterial(top = "#120b07", bottom = "#060403") {
       uniform float uGlow;
       uniform float uTime;
       uniform float uGrain;
+      uniform sampler2D tPhotoA;
+      uniform sampler2D tPhotoB;
+      uniform vec4 uRectA;
+      uniform vec4 uRectB;
+      uniform float uPhotoMix;
+      uniform float uPhotoAmt;
+      uniform float uPhotoBlur;
+      uniform float uPhotoGain;
+      uniform vec2 uRes;
       varying vec3 vDir;
+
+      // recorte da foto cobrindo a tela inteira (origem do recorte no topo)
+      vec3 photoAt( sampler2D t, vec4 r, vec2 s ) {
+        float ra = ( r.z * 940.0 ) / ( r.w * 1672.0 );
+        float sa = uRes.x / uRes.y;
+        vec2 c = s;
+        if ( sa > ra ) c.y = 0.5 + ( s.y - 0.5 ) * ( ra / sa );
+        else c.x = 0.5 + ( s.x - 0.5 ) * ( sa / ra );
+        vec2 uv = vec2( r.x + c.x * r.z, 1.0 - ( r.y + ( 1.0 - c.y ) * r.w ) );
+        return texture2D( t, uv, uPhotoBlur ).rgb;
+      }
 
       void main() {
         vec3 d = normalize( vDir );
@@ -93,6 +125,13 @@ export function createBackdropMaterial(top = "#120b07", bottom = "#060403") {
         float n = aln_noise( d * 2.4 + vec3( 0.0, uTime * 0.012, 0.0 ) )
                 + aln_noise( d * 5.1 + vec3( 3.0, uTime * 0.02, 0.0 ) ) * 0.5;
         col *= 1.0 + n * 0.1;
+
+        if ( uPhotoAmt > 0.001 ) {
+          vec2 s = gl_FragCoord.xy / uRes;
+          vec3 ph = photoAt( tPhotoA, uRectA, s );
+          if ( uPhotoMix > 0.001 ) ph = mix( ph, photoAt( tPhotoB, uRectB, s ), uPhotoMix );
+          col = mix( col, ph * uPhotoGain + uGlowColor * pow( ndl, 26.0 ) * uGlow * 0.4, uPhotoAmt );
+        }
 
         // vinheta esférica: escurece atrás da câmera e nas bordas do domo
         col *= 0.55 + 0.45 * smoothstep( -0.85, 0.25, d.y );
@@ -374,6 +413,8 @@ export type CremaUniforms = {
   uCrema: { value: THREE.Color };
   uHighlight: { value: THREE.Color };
   uOpacity: { value: number };
+  tCrema: { value: THREE.Texture };
+  uPhoto: { value: number };
 };
 
 export function createCremaMaterial() {
@@ -386,6 +427,8 @@ export function createCremaMaterial() {
     uCrema: { value: new THREE.Color("#b5793c") },
     uHighlight: { value: new THREE.Color("#e8c08a") },
     uOpacity: { value: 1 },
+    tCrema: { value: photoTexture("/textura/crema.jpg") },
+    uPhoto: { value: 1 },
   };
 
   const material = new THREE.ShaderMaterial({
@@ -409,6 +452,8 @@ export function createCremaMaterial() {
       uniform vec3 uCrema;
       uniform vec3 uHighlight;
       uniform float uOpacity;
+      uniform sampler2D tCrema;
+      uniform float uPhoto;
       varying vec2 vUv;
 
       void main() {
@@ -431,6 +476,16 @@ export function createCremaMaterial() {
 
         vec3 col = mix( uDark, uCrema, clamp( uFoam * ( 0.5 + f * 0.9 ), 0.0, 1.0 ) );
         col = mix( col, uHighlight, smoothstep( 0.25, 0.75, f2 ) * uFoam * 0.5 );
+
+        // a crema fotografada, girando devagar em espiral
+        {
+          float a2 = -uTime * uSwirl * 0.35 + ( 1.0 - r ) * 0.6 * sin( uTime * 0.25 );
+          vec2 q = mat2( cos( a2 ), -sin( a2 ), sin( a2 ), cos( a2 ) ) * c;
+          vec3 real = texture2D( tCrema, q * 0.45 + 0.5 ).rgb;
+          // antes da espuma formar, o café é escuro: a foto entra com a espuma
+          vec3 darkReal = real * vec3( 0.32, 0.26, 0.22 );
+          col = mix( col, mix( darkReal, real, uFoam ), uPhoto * 0.9 );
+        }
 
         // menisco: anel mais claro encostado na parede da xícara
         col = mix( col, uHighlight, smoothstep( 0.82, 1.0, r ) * 0.35 * uFoam );

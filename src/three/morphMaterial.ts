@@ -1,5 +1,7 @@
 import * as THREE from "three";
 
+import { photoTexture } from "./photoTextures";
+
 export type MorphUniforms = {
   uMorph: { value: number };
   uTime: { value: number };
@@ -7,6 +9,14 @@ export type MorphUniforms = {
   uGrooveColor: { value: THREE.Color };
   uEmber: { value: number };
   uEmberColor: { value: THREE.Color };
+  /** quanto da foto real aparece na superfície (0 = só a cor da rampa) */
+  uPhoto: { value: number };
+  /** 0 = grão cru/pergaminho, 1 = grão torrado */
+  uRoastT: { value: number };
+  uBump: { value: number };
+  tCherry: { value: THREE.Texture };
+  tGreen: { value: THREE.Texture };
+  tRoast: { value: THREE.Texture };
 };
 
 /**
@@ -25,6 +35,12 @@ export function createMorphMaterial(): THREE.MeshPhysicalMaterial & {
     uGrooveColor: { value: new THREE.Color("#efe2c8") },
     uEmber: { value: 0 },
     uEmberColor: { value: new THREE.Color("#ff6a16") },
+    uPhoto: { value: 1 },
+    uRoastT: { value: 0 },
+    uBump: { value: 1 },
+    tCherry: { value: photoTexture("/textura/cereja.jpg") },
+    tGreen: { value: photoTexture("/textura/grao-verde.jpg") },
+    tRoast: { value: photoTexture("/textura/grao-torrado.jpg") },
   };
 
   const material = new THREE.MeshPhysicalMaterial({
@@ -46,9 +62,11 @@ export function createMorphMaterial(): THREE.MeshPhysicalMaterial & {
       attribute vec3 aCherryN;
       attribute vec3 aBeanN;
       attribute float aGroove;
+      attribute vec3 aDir;
       uniform float uMorph;
       uniform float uTime;
       varying float vGrooveV;
+      varying vec3 vDir;
     ` + shader.vertexShader;
 
     shader.vertexShader = shader.vertexShader
@@ -57,6 +75,7 @@ export function createMorphMaterial(): THREE.MeshPhysicalMaterial & {
         `
         vec3 objectNormal = normalize( mix( aCherryN, aBeanN, uMorph ) );
         vGrooveV = aGroove * uMorph;
+        vDir = aDir;
         `,
       )
       .replace(
@@ -73,7 +92,15 @@ export function createMorphMaterial(): THREE.MeshPhysicalMaterial & {
       uniform vec3 uGrooveColor;
       uniform float uEmber;
       uniform vec3 uEmberColor;
+      uniform float uMorph;
+      uniform float uPhoto;
+      uniform float uRoastT;
+      uniform float uBump;
+      uniform sampler2D tCherry;
+      uniform sampler2D tGreen;
+      uniform sampler2D tRoast;
       varying float vGrooveV;
+      varying vec3 vDir;
     ` + shader.fragmentShader;
 
     shader.fragmentShader = shader.fragmentShader
@@ -81,8 +108,48 @@ export function createMorphMaterial(): THREE.MeshPhysicalMaterial & {
         "#include <color_fragment>",
         `
         #include <color_fragment>
+        // Superfície real tirada das fotos. A face chata do grão (+Z) recebe o
+        // grão fotografado de frente, com a fenda; o dorso usa a metade de cima
+        // da mesma foto, esticada, para não repetir a fenda nas costas.
+        vec3 dd = normalize( vDir );
+        vec2 uvF = dd.xy * 0.5 + 0.5;
+        vec2 uvB = vec2( 1.0 - uvF.x, 0.74 + dd.y * 0.2 );
+        float front = smoothstep( -0.2, 0.3, dd.z );
+        // a cereja é quase uma esfera: a foto é projetada a partir da câmera,
+        // então ela sempre mostra a face fotografada, sem esticar nas bordas
+        vec3 vn = normalize( vNormal );
+        vec3 cherryC = texture2D( tCherry, vn.xy * 0.47 + 0.5 ).rgb;
+        vec3 greenC = mix( texture2D( tGreen, uvB ).rgb, texture2D( tGreen, uvF ).rgb, front );
+        vec3 roastC = mix( texture2D( tRoast, uvB ).rgb, texture2D( tRoast, uvF ).rgb, front );
+        vec3 beanC = mix( greenC, roastC, uRoastT );
+        float beanL = dot( beanC, vec3( 0.299, 0.587, 0.114 ) );
+        // a cor da rampa dá o tom de cada estágio; a foto dá o detalhe
+        vec3 toned = diffuseColor.rgb * clamp( beanL / 0.32, 0.25, 2.2 );
+        vec3 bean = mix( toned, beanC, 0.55 );
+        float isBean = smoothstep( 0.05, 0.6, uMorph );
+        vec3 realC = mix( cherryC * 1.05, bean, isBean );
+        diffuseColor.rgb = mix( diffuseColor.rgb, realC, uPhoto );
+        float photoH = beanL * isBean;
         float gm = smoothstep( 0.22, 0.92, vGrooveV );
-        diffuseColor.rgb = mix( diffuseColor.rgb, uGrooveColor, gm * uGroove );
+        diffuseColor.rgb = mix( diffuseColor.rgb, uGrooveColor, gm * uGroove * ( 1.0 - 0.8 * uPhoto ) );
+        `,
+      )
+      .replace(
+        "#include <normal_fragment_maps>",
+        `
+        #include <normal_fragment_maps>
+        // relevo da foto: rugas do grão, gotas da cereja
+        {
+          vec3 sx = dFdx( -vViewPosition );
+          vec3 sy = dFdy( -vViewPosition );
+          float bx = dFdx( photoH );
+          float by = dFdy( photoH );
+          vec3 r1 = cross( sy, normal );
+          vec3 r2 = cross( normal, sx );
+          float det = dot( sx, r1 );
+          vec3 grad = sign( det ) * ( bx * r1 + by * r2 );
+          normal = normalize( abs( det ) * normal - grad * 0.3 * uBump * uPhoto );
+        }
         `,
       )
       .replace(
@@ -121,6 +188,8 @@ export type CoffeeState = {
   ember: number;
   /** escala relativa — o grão incha ao torrar e encolhe ao secar */
   scale: number;
+  /** 0 = superfície do grão cru, 1 = do grão torrado (fotos) */
+  roast: number;
 };
 
 type Stop = CoffeeState & { at: number };
@@ -141,6 +210,7 @@ const RAMP: Stop[] = [
     clearcoat: 1.0,
     clearcoatRoughness: 0.1,
     ember: 0,
+    roast: 0,
     scale: 1.0,
   },
   {
@@ -153,6 +223,7 @@ const RAMP: Stop[] = [
     clearcoat: 0.95,
     clearcoatRoughness: 0.14,
     ember: 0,
+    roast: 0,
     scale: 0.99,
   },
   {
@@ -166,6 +237,7 @@ const RAMP: Stop[] = [
     clearcoat: 0.45,
     clearcoatRoughness: 0.4,
     ember: 0,
+    roast: 0,
     scale: 0.94,
   },
   {
@@ -178,6 +250,7 @@ const RAMP: Stop[] = [
     clearcoat: 0.12,
     clearcoatRoughness: 0.7,
     ember: 0,
+    roast: 0,
     scale: 0.9,
   },
   {
@@ -190,6 +263,7 @@ const RAMP: Stop[] = [
     clearcoat: 0.14,
     clearcoatRoughness: 0.62,
     ember: 0,
+    roast: 0,
     scale: 0.92,
   },
   {
@@ -202,6 +276,7 @@ const RAMP: Stop[] = [
     clearcoat: 0.2,
     clearcoatRoughness: 0.5,
     ember: 0.45,
+    roast: 0.35,
     scale: 1.0,
   },
   {
@@ -214,6 +289,7 @@ const RAMP: Stop[] = [
     clearcoat: 0.3,
     clearcoatRoughness: 0.38,
     ember: 0.6,
+    roast: 0.7,
     scale: 1.05,
   },
   {
@@ -226,6 +302,7 @@ const RAMP: Stop[] = [
     clearcoat: 0.5,
     clearcoatRoughness: 0.28,
     ember: 0.35,
+    roast: 1,
     scale: 1.07,
   },
   {
@@ -238,6 +315,7 @@ const RAMP: Stop[] = [
     clearcoat: 0.72,
     clearcoatRoughness: 0.2,
     ember: 0,
+    roast: 1,
     scale: 1.06,
   },
 ];
@@ -268,6 +346,7 @@ export function coffeeStateAt(t: number, out: CoffeeState): CoffeeState {
   out.clearcoatRoughness = lerp(a.clearcoatRoughness, b.clearcoatRoughness, s);
   out.ember = lerp(a.ember, b.ember, s);
   out.scale = lerp(a.scale, b.scale, s);
+  out.roast = lerp(a.roast, b.roast, s);
 
   cA.set(a.color);
   cB.set(b.color);
@@ -289,6 +368,7 @@ export function emptyState(): CoffeeState {
     clearcoatRoughness: 0.12,
     ember: 0,
     scale: 1,
+    roast: 0,
   };
 }
 
@@ -309,4 +389,5 @@ export function applyCoffeeState(
   u.uGroove.value = state.grooveAmount;
   u.uGrooveColor.value.set(state.groove);
   u.uEmber.value = state.ember;
+  u.uRoastT.value = state.roast;
 }

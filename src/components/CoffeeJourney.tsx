@@ -14,15 +14,14 @@ import {
 import { useMotionPref } from "@/lib/motionPref";
 import { journey } from "@/lib/site";
 import { SceneCanvas } from "@/three/SceneCanvas";
-import { JOURNEY_SHOTS } from "@/three/shots";
 
-const PhotoStage = dynamic(
-  () => import("@/three/PhotoStage").then((m) => m.PhotoStage),
+const JourneyScene = dynamic(
+  () => import("@/three/JourneyScene").then((m) => m.JourneyScene),
   { ssr: false },
 );
 
-const PARTICLES = { low: 160, mid: 320, high: 480 } as const;
-const STOPS = journey.map((s, i) => (i === 0 ? 0 : s.at));
+const BEANS = { low: 170, mid: 360, high: 560 } as const;
+const PARTICLES = { low: 220, mid: 520, high: 900 } as const;
 
 /** Imagens de apoio — também servem de fallback sem WebGL. */
 const STILLS: Record<string, { src: string; alt: string }> = {
@@ -99,15 +98,16 @@ export function CoffeeJourney() {
           <span className="absolute inset-0 bg-[radial-gradient(120%_90%_at_50%_45%,transparent_20%,rgba(7,4,3,0.85)_88%)]" />
         </div>
         {webgl === true && mounted && (
-          <SceneCanvas active={inView} className="!absolute inset-0">
-            <PhotoStage
-              shots={JOURNEY_SHOTS}
-              stops={STOPS}
+          <SceneCanvas
+            active={inView}
+            className="!absolute inset-0"
+            camera={{ position: [0.25, 0.3, 4.3], fov: 38 }}
+          >
+            <JourneyScene
               progress={progress}
+              count={BEANS[tier]}
               particles={PARTICLES[tier]}
               reduced={reduced}
-              fade={0.06}
-              panelX={0.68}
             />
           </SceneCanvas>
         )}

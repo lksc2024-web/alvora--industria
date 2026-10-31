@@ -17,6 +17,7 @@ import {
   createParticleGeometry,
   createParticleMaterial,
 } from "./shaders";
+import { applyBackdropPhoto, BG } from "./photoTextures";
 import { useStudioEnv } from "./useStudioEnv";
 import { clamp01, damp, fitFactor, lerp, makeRandom, smoothstep } from "./util";
 
@@ -41,6 +42,7 @@ type Props = {
 export function RoastScene({ progress, count, particles, reduced }: Props) {
   const camera = useThree((s) => s.camera) as THREE.PerspectiveCamera;
   const size = useThree((s) => s.size);
+  const gl = useThree((s) => s.gl);
   useStudioEnv(ENV_BANDS, ENV_BASE);
 
   const geo = useMemo(
@@ -122,6 +124,7 @@ export function RoastScene({ progress, count, particles, reduced }: Props) {
     }
 
     const bu = backdrop.uniforms;
+    applyBackdropPhoto(backdrop, BG.tambor, null, 0, gl);
     bu.uGlow.value = 0.5 + heat * 0.9;
     bu.uTime.value = time;
     (bu.uTop.value as THREE.Color).setRGB(

@@ -13,6 +13,7 @@ import {
   createParticleMaterial,
   createStreamMaterial,
 } from "./shaders";
+import { applyBackdropPhoto, BG } from "./photoTextures";
 import { useStudioEnv } from "./useStudioEnv";
 import { clamp01, damp, fitFactor, lerp, smoothstep } from "./util";
 
@@ -38,6 +39,7 @@ type Props = {
 export function PourScene({ progress, particles, reduced }: Props) {
   const camera = useThree((s) => s.camera) as THREE.PerspectiveCamera;
   const size = useThree((s) => s.size);
+  const gl = useThree((s) => s.gl);
   useStudioEnv(ENV_BANDS, ENV_BASE);
 
   const cupGeo = useMemo(() => buildCupGeometry(84), []);
@@ -131,6 +133,7 @@ export function PourScene({ progress, particles, reduced }: Props) {
     u.uSize.value = lerp(26, 40, settle);
 
     backdrop.uniforms.uTime.value = time;
+    applyBackdropPhoto(backdrop, BG.xicara, BG.servida, settle, gl);
     backdrop.uniforms.uGlow.value = 0.45 + settle * 0.35;
 
     if (splash.current) splash.current.visible = u.uOpacity.value > 0.01;
@@ -157,7 +160,9 @@ export function PourScene({ progress, particles, reduced }: Props) {
       <group ref={cup} position={[0, -0.52, 0]} scale={1.45}>
         <mesh geometry={saucerGeo} position={[0, -0.02, 0]}>
           <meshPhysicalMaterial
-            color="#efe6d8"
+            color="#fbf3e6"
+            emissive="#3b2a1a"
+            emissiveIntensity={0.55}
             roughness={0.26}
             metalness={0.02}
             clearcoat={0.85}
@@ -166,7 +171,9 @@ export function PourScene({ progress, particles, reduced }: Props) {
         </mesh>
         <mesh geometry={cupGeo}>
           <meshPhysicalMaterial
-            color="#f3ebdf"
+            color="#fbf3e6"
+            emissive="#3b2a1a"
+            emissiveIntensity={0.55}
             roughness={0.22}
             metalness={0.02}
             clearcoat={0.95}
@@ -178,7 +185,9 @@ export function PourScene({ progress, particles, reduced }: Props) {
         <mesh position={[0.78, 0.5, 0]} rotation={[0, 0, -0.1]}>
           <torusGeometry args={[0.24, 0.045, 12, 40, Math.PI * 1.25]} />
           <meshPhysicalMaterial
-            color="#f3ebdf"
+            color="#fbf3e6"
+            emissive="#3b2a1a"
+            emissiveIntensity={0.55}
             roughness={0.22}
             metalness={0.02}
             clearcoat={0.95}

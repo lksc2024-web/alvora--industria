@@ -249,22 +249,23 @@ visualmente equivalentes nessa escala.
 - Instrumentar Web Vitals reais com `@vercel/speed-insights`.
 
 
-## Fotografias realistas no lugar dos objetos 3D (31/10/2026)
+## Fotografias realistas como material da animação 3D (31/10/2026)
 
 O fruto, os grãos e a xícara modelados em código pareciam de plástico. O
-cliente gerou no ChatGPT onze fotos verticais, uma por etapa, a partir de
-quadros capturados do próprio site.
+cliente gerou no ChatGPT onze fotos verticais, uma por etapa. A animação 3D foi
+mantida inteira; as fotos viraram o material dela:
 
-- `src/three/PhotoStage.tsx` substitui `HeroScene`, `JourneyScene`,
-  `RoastScene` e `PourScene` (os arquivos antigos ficam no repositório, sem uso).
-- Cada foto tem um mapa de profundidade (`*-prof.jpg`), calculado pela
-  nitidez (o que está em foco está perto) e por elipses marcadas à mão no
-  objeto principal. É ele que dá o parallax 2.5D.
-- Efeitos locais por foto, definidos em `src/three/shots.ts`: fio de líquido
-  escorrendo, redemoinho na crema, ar quente, brasa pulsando, folhas balançando
-  e partículas (poeira, brasa, vapor, pó).
-- Telas largas: a foto vertical vira um painel nítido e a própria foto,
-  desfocada, preenche o fundo. A abertura continua em tela cheia.
-- Resolução das fotos: 940 × 1672. Se o cliente conseguir versões maiores, basta
-  trocar os arquivos em `public/foto/` com os mesmos nomes e refazer os mapas
-  de profundidade.
+- `public/textura/`: recortes das fotos (cereja, grão cru, grão torrado, folha
+  e crema). Os grãos foram recortados por GrabCut e girados para o eixo longo
+  ficar na horizontal, com a fenda no mesmo lugar da malha.
+- `morphMaterial.ts`: a face chata do grão recebe a foto de frente; o dorso usa
+  a metade de cima da mesma foto. A cereja é projetada a partir da câmera, para
+  nunca esticar. A cor da rampa de torra continua dando o tom de cada estágio,
+  e a foto dá o detalhe e um relevo leve. `roast` na rampa troca o grão cru
+  pelo torrado.
+- `shaders.ts`: o fundo de cada cena mostra o pedaço da foto da etapa sem o
+  objeto principal (bokeh, sol, brasa, terreiro), desfocado por mipmap. A crema
+  da xícara usa a foto real girando devagar.
+- Fundos por etapa em `photoTextures.ts` (`BG`).
+- As fotos têm 940 × 1672. Versões maiores podem substituir os arquivos de
+  `public/foto/`; os recortes de `public/textura/` saem delas.

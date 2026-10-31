@@ -5,7 +5,6 @@ import Image from "next/image";
 import { useRef } from "react";
 
 import { SceneCanvas } from "@/three/SceneCanvas";
-import { HERO_SHOTS } from "@/three/shots";
 import {
   useInView,
   usePointer,
@@ -16,12 +15,12 @@ import {
 import { useMotionPref } from "@/lib/motionPref";
 import { brand, hero } from "@/lib/site";
 
-const PhotoStage = dynamic(
-  () => import("@/three/PhotoStage").then((m) => m.PhotoStage),
+const HeroScene = dynamic(
+  () => import("@/three/HeroScene").then((m) => m.HeroScene),
   { ssr: false },
 );
 
-const PARTICLES = { low: 140, mid: 260, high: 400 } as const;
+const PARTICLES = { low: 180, mid: 420, high: 700 } as const;
 
 export function HeroSection() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -50,16 +49,16 @@ export function HeroSection() {
       <div ref={viewRef} className="absolute inset-0">
         {webgl && mounted && (
           <div className="absolute inset-0 animate-[fade-in_1.6s_var(--ease-out-expo)_both]">
-            <SceneCanvas active={inView} className="!absolute inset-0">
-              <PhotoStage
-                shots={HERO_SHOTS}
-                stops={[0]}
+            <SceneCanvas
+              active={inView}
+              className="!absolute inset-0"
+              camera={{ position: [0, 0, 4.2], fov: 40 }}
+            >
+              <HeroScene
                 progress={progress}
                 pointer={pointer}
                 reduced={reduced}
                 particles={PARTICLES[tier]}
-                layout="cover"
-                exit
               />
             </SceneCanvas>
           </div>

@@ -25,11 +25,12 @@ npm run start
 - **GSAP 3 / ScrollTrigger** — apenas para ler o progresso de cada seção
 - **Playwright** para o QA automatizado
 
-Nenhum serviço pago e nenhum asset externo em runtime. As cenas da abertura,
-da jornada, da torrefação e da xícara usam fotografias realistas geradas pelo
-cliente no ChatGPT (`public/foto/`), animadas em WebGL pelo `PhotoStage`:
-profundidade calculada, parallax, líquido escorrendo, crema girando, vapor e
-brasas. Nenhum vídeo.
+Nenhum serviço pago e nenhum asset externo em runtime. A animação 3D é a
+mesma do projeto original (o fruto que vira grão, o lote se reorganizando, a
+torra, a moagem e a xícara), agora vestida com fotografias realistas geradas
+pelo cliente no ChatGPT: a superfície da cereja, do grão cru, do grão torrado,
+da folha e da crema vem das fotos (`public/textura/`), e cada etapa tem a foto
+correspondente desfocada ao fundo (`public/foto/`).
 
 ## Estrutura
 

@@ -13,14 +13,13 @@ import {
 import { useMotionPref } from "@/lib/motionPref";
 import { pour } from "@/lib/site";
 import { SceneCanvas } from "@/three/SceneCanvas";
-import { POUR_SHOTS } from "@/three/shots";
 
-const PhotoStage = dynamic(
-  () => import("@/three/PhotoStage").then((m) => m.PhotoStage),
+const PourScene = dynamic(
+  () => import("@/three/PourScene").then((m) => m.PourScene),
   { ssr: false },
 );
 
-const PARTICLES = { low: 120, mid: 220, high: 320 } as const;
+const PARTICLES = { low: 90, mid: 180, high: 280 } as const;
 
 export function CoffeePour() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -60,15 +59,15 @@ export function CoffeePour() {
           <span className="absolute inset-0 bg-[radial-gradient(120%_95%_at_50%_50%,transparent_18%,rgba(7,4,3,0.88)_88%)]" />
         </div>
         {webgl === true && mounted && (
-          <SceneCanvas active={inView} className="!absolute inset-0">
-            <PhotoStage
-              shots={POUR_SHOTS}
-              stops={[0, 0.62]}
+          <SceneCanvas
+            active={inView}
+            className="!absolute inset-0"
+            camera={{ position: [0, 1.5, 4.6], fov: 40 }}
+          >
+            <PourScene
               progress={progress}
               particles={PARTICLES[tier]}
               reduced={reduced}
-              fade={0.14}
-              panelX={0.68}
             />
           </SceneCanvas>
         )}
@@ -96,8 +95,8 @@ export function CoffeePour() {
               {pour.lead}
             </p>
             <p className="mt-8 hidden max-w-xs border-l border-gold-400/40 pl-4 text-[0.72rem] leading-relaxed text-mist-400 md:block">
-              Fotografias com profundidade calculada: o fio escorre, a crema gira e
-              o vapor sobe em WebGL, sem vídeo.
+              O fio, a crema e o vapor são gerados em WebGL — geometria animada
+              por shader, sem simulação física e sem vídeo.
             </p>
           </div>
         </div>

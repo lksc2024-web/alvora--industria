@@ -17,6 +17,9 @@ import {
   createParticleMaterial,
 } from "./shaders";
 import { useStudioEnv } from "./useStudioEnv";
+import { applyBackdropPhoto, BG, photoTexture } from "./photoTextures";
+
+const FOLHA = () => photoTexture("/textura/folha.jpg");
 import { damp, fitFactor, makeRandom, smoothstep } from "./util";
 
 const ENV_BANDS = [
@@ -37,6 +40,7 @@ type Props = {
 export function HeroScene({ progress, pointer, reduced, particles }: Props) {
   const camera = useThree((s) => s.camera) as THREE.PerspectiveCamera;
   const size = useThree((s) => s.size);
+  const gl = useThree((s) => s.gl);
   useStudioEnv(ENV_BANDS, ENV_BASE);
 
   const geo = useMemo(() => buildMorphGeometry([120, 84]), []);
@@ -91,7 +95,8 @@ export function HeroScene({ progress, pointer, reduced, particles }: Props) {
     u.uCenter.value.set(0, 0, -1.2);
     backdrop.uniforms.uGlow.value = 0.85;
     (backdrop.uniforms.uGlowColor.value as THREE.Color).set("#ffbe72");
-  }, [mat, pMat, backdrop, state]);
+    applyBackdropPhoto(backdrop, BG.hero, null, 0, gl);
+  }, [mat, pMat, backdrop, state, gl]);
 
   useEffect(
     () => () => {
@@ -105,6 +110,7 @@ export function HeroScene({ progress, pointer, reduced, particles }: Props) {
     const dt = Math.min(delta, 0.05);
     const p = progress.current;
     const time = reduced ? p * 6 : performance.now() / 1000;
+    applyBackdropPhoto(backdrop, BG.hero, null, 0, gl);
 
     // entrada: o fruto emerge do escuro em vez de simplesmente aparecer
     intro.current = reduced ? 1 : damp(intro.current, 1, 1.5, dt);
@@ -163,7 +169,8 @@ export function HeroScene({ progress, pointer, reduced, particles }: Props) {
           {leafList.map((l, i) => (
             <mesh key={i} geometry={leafGeo} position={l.pos} rotation={l.rot} scale={l.scale}>
               <meshStandardMaterial
-                color={i % 2 === 0 ? "#3d7342" : "#285432"}
+                map={FOLHA()}
+                color={i % 2 === 0 ? "#ffffff" : "#c9dcc2"}
                 roughness={0.5}
                 envMapIntensity={1.4}
                 side={THREE.DoubleSide}
