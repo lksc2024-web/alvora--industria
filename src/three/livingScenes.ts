@@ -217,3 +217,34 @@ export function descentDirection(P: number): Direction {
   if (mix >= 0.999) return { a: 5, focusA: fB, zoomA: zB, blur: blur > 0.01 ? blur : 0 };
   return { a: 4, b: 5, mix, focusA: fA, zoomA: zA, focusB: fB, zoomB: zB, cut: 0.6, blur, ripple: 0.3 };
 }
+
+/** O ritual: 12-espresso. Dois fios saem das bicas, a crema gira e se forma. */
+export const RITUAL_SHOTS: LiveShot[] = [
+  {
+    src: "/foto/12-espresso.jpg",
+    streams: [
+      { from: [0.31, 0.28], to: [0.322, 0.54], width: 0.022, speed: 0.06, feather: 0.6, taper: 0.8 },
+      { from: [0.632, 0.28], to: [0.602, 0.52], width: 0.022, speed: 0.06, feather: 0.6, taper: 0.8 },
+    ],
+    spin: { center: [0.47, 0.515], radius: [0.27, 0.078], speed: 0.22, feather: 0.6 },
+    churn: { center: [0.6, 0.52], radius: [0.1, 0.03], speed: 0.45, feather: 0.8 },
+    ripple: { center: [0.322, 0.54], radius: [0.13, 0.035], amp: 0.012, freq: 30, speed: 7 },
+    steam: { box: [0.0, 0.32, 0.18, 0.46], speed: 0.03, wiggle: 1 },
+    glow: 0.35,
+    period: 1.4,
+    particles: "vapor",
+    emitter: [0.47, 0.42],
+  },
+];
+
+/** A rolagem é o cronômetro da extração: o fio sai cor de mel e escurece. */
+export function ritualDirection(p: number): Direction {
+  const k = smoothstep(0, 1, p);
+  return {
+    a: 0,
+    focusA: [lerp(0.48, 0.47, k), lerp(0.46, 0.51, k)],
+    zoomA: lerp(1.0, 1.22, k),
+    tone: 0.7 * (1 - smoothstep(0.05, 0.85, p)),
+    ripple: 0.6 + 0.4 * smoothstep(0, 0.5, p),
+  };
+}

@@ -10,17 +10,24 @@ import {
   useQuality,
   useScrollProgress,
   useWebGL,
+  type ProgressRef,
 } from "@/lib/hooks";
 import { useMotionPref } from "@/lib/motionPref";
 import { ritual } from "@/lib/site";
 import { SceneCanvas } from "@/three/SceneCanvas";
 
-const RitualScene = dynamic(
-  () => import("@/three/RitualScene").then((m) => m.RitualScene),
+const RitualLive = dynamic(
+  () =>
+    Promise.all([import("@/three/LivingPhoto"), import("@/three/livingScenes")]).then(
+      ([m, s]) =>
+        function RitualLive(props: { progress: ProgressRef; reduced: boolean; particles: number }) {
+          return <m.LivingPhoto shots={s.RITUAL_SHOTS} direct={s.ritualDirection} panelX={0.53} beans={1} {...props} />;
+        },
+    ),
   { ssr: false },
 );
 
-const PARTICLES = { low: 70, mid: 140, high: 220 } as const;
+const PARTICLES = { low: 120, mid: 200, high: 300 } as const;
 
 export function RitualExperience() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -59,7 +66,7 @@ export function RitualExperience() {
       >
         <div aria-hidden className="absolute inset-0">
           <Image
-            src="/img/cappuccino.jpg"
+            src="/foto/12-espresso.jpg"
             alt=""
             fill
             sizes="100vw"
@@ -68,12 +75,8 @@ export function RitualExperience() {
           <span className="absolute inset-0 bg-[radial-gradient(115%_90%_at_50%_48%,transparent_16%,rgba(7,4,3,0.9)_86%)]" />
         </div>
         {webgl === true && mounted && (
-          <SceneCanvas
-            active={inView}
-            className="!absolute inset-0"
-            camera={{ position: [0, 2.6, 2.2], fov: 40 }}
-          >
-            <RitualScene
+          <SceneCanvas active={inView} className="!absolute inset-0">
+            <RitualLive
               progress={progress}
               particles={PARTICLES[tier]}
               reduced={reduced}
@@ -146,10 +149,10 @@ function RitualFallback() {
       aria-label="O ritual do preparo"
     >
       <div className="shell grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
-        <div className="relative mx-auto aspect-square w-full max-w-[26rem] overflow-hidden rounded-full lg:mx-0">
+        <div className="relative mx-auto aspect-4/5 w-full max-w-[26rem] overflow-hidden rounded-lg lg:mx-0">
           <Image
-            src="/img/cappuccino.jpg"
-            alt="Superfície de um café visto de cima, com crema e desenho na espuma"
+            src="/foto/12-espresso.jpg"
+            alt="Dois fios de espresso caindo de um porta-filtro numa xícara branca, com a crema se formando"
             fill
             sizes="(max-width: 1024px) 88vw, 44vw"
             className="object-cover"

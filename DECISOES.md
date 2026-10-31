@@ -329,3 +329,10 @@ um pulo. Agora é uma seção só (`CoffeeJourney`), e a rolagem é gravidade:
 - As seções `RoastingExperience` e `CoffeePour` saíram; `#torrefacao` e
   `#xicara` viraram âncoras dentro da descida.
 - Linha do tempo e medidas das fotos em `src/three/livingScenes.ts`.
+
+### O ritual do preparo também como foto viva (31/10/2026)
+
+A última seção com a xícara 3D antiga (Momento 02) agora usa `12-espresso.jpg`,
+gerada para ela: os dois fios saem das bicas, a crema gira e se forma, ondas
+no ponto de impacto, vapor. A rolagem segue sendo o cronômetro da extração; o
+tom começa cor de mel e escurece até o avelã do fim. `RitualScene` saiu.
