@@ -49,6 +49,22 @@ QA_ONLY=webgl node qa/run-qa.mjs
 
 These are documented commands, **not a claim of passing results**. Check `DECISOES.md` for pending work and limitations.
 
+## Signature interactive sequences
+
+The original project documentation describes three key experiences:
+
+| Sequence | Engineering detail |
+| --- | --- |
+| Coffee journey (`#jornada`) | Eight scroll-controlled scenes, a cherry-to-bean geometry morph, instanced beans transitioning between layouts, and particles shifting from dust to embers, grounds, and steam |
+| Roasting (`#torrefacao`) | A metallic drum, moving beans, embers, and scroll-driven roasting stages from drying through discharge |
+| Espresso ritual (`#ritual`) | A macro crema simulation with spiral movement and a camera transition |
+
+The `CoffeeThread` visual connects the pouring sequence to later content. The implementation is described in the source repository; animation quality and device performance have not been independently benchmarked.
+
+## Engineering decisions and asset strategy
+
+The original README documents procedural 3D geometry and shaders, including `coffeeGeometry.ts`, `morphMaterial.ts`, `shaders.ts`, and a generated canvas environment map. It describes the experience as code-driven, without paid runtime services or externally loaded 3D assets. Refer to [DECISOES.md](./DECISOES.md) for known limitations and technical trade-offs.
+
 ## Accessibility and performance approach
 
 The repository documents reduced-motion alternatives, no-WebGL fallbacks, semantic content, and controlled rendering based on visibility. Their effectiveness still requires independent verification across browsers and devices.
