@@ -1,88 +1,82 @@
-# ALVORA — Da origem à xícara
+# ALVORA — From Origin to Cup
 
-Experiência digital cinematográfica para uma indústria de café. A página conta
-**uma única história**: um fruto vermelho na lavoura atravessa a colheita, a
-secagem, a torra, a moagem e o preparo até cair numa xícara — e a transformação
-acontece, literalmente, enquanto você rola a página.
+**Status:** fictional coffee-industry brand / interactive technical demonstration. ALVORA is not a registered operating company or a product for sale.
 
-> **ALVORA é uma marca fictícia**, criada para este projeto demonstrativo.
-> Não existe empresa, CNPJ, domínio, canal de atendimento ou produto à venda.
+## Overview
 
-## Como rodar
+A scroll-driven 3D narrative following coffee from the fruit through harvesting, drying, roasting, grinding, and espresso preparation. The experience explores a cinematic presentation while documenting accessibility and progressive fallback behavior.
+
+## Stack
+
+- Next.js 16 (App Router), React 19, TypeScript
+- Tailwind CSS 4
+- Three.js, React Three Fiber, Drei
+- GSAP / ScrollTrigger
+- Playwright-based QA scripts
+
+## Architecture
+
+- `src/app/` — page composition, metadata, styles, sitemap and robots
+- `src/components/` — content and interactive page sections
+- `src/three/` — geometry, shaders, scenes and canvas wrapper
+- `src/lib/` — site content, motion, WebGL and viewport hooks
+- `qa/` — browser audit and smoke scripts
+- `DECISOES.md` — engineering decisions and known limitations
+
+## Local setup
 
 ```bash
-npm install
-npm run dev      # http://localhost:3000
+npm ci
+npm run dev
+# open http://localhost:3000
+```
+
+Production build (not independently executed as part of this documentation update):
+
+```bash
 npm run build
 npm run start
 ```
 
-## Stack
+## QA commands
 
-- **Next.js 16** (App Router) + **TypeScript**
-- **Tailwind CSS v4** (tokens em `@theme`, via `@tailwindcss/postcss`)
-- **three.js 0.186** + **@react-three/fiber 9** + **@react-three/drei 10**
-- **GSAP 3 / ScrollTrigger** — apenas para ler o progresso de cada seção
-- **Playwright** para o QA automatizado
-
-Nenhum serviço pago, nenhuma geração de imagem/vídeo por IA, nenhum asset
-externo em runtime. Toda a experiência 3D é código.
-
-## Estrutura
-
-```
-src/
-  app/
-    layout.tsx          metadados, Open Graph, fontes
-    page.tsx            composição dos atos
-    globals.css         design system (cores, tipografia, utilitários)
-    sitemap.ts robots.ts
-  lib/
-    site.ts             ÚNICA fonte de textos, imagens e config comercial
-    hooks.ts            reduced-motion, WebGL, visibilidade, scroll, qualidade
-  components/
-    SiteHeader  HeroSection  CoffeeJourney  RoastingExperience
-    CoffeePour  CoffeeThread HumanExperience RitualExperience
-    ProductShowcase IndustrySection ConversionSection SiteFooter
-  three/
-    coffeeGeometry.ts   fruto ↔ grão na mesma malha, xícara, pires, folha
-    morphMaterial.ts    material com morph + rampa de torra
-    shaders.ts          fundo, partículas, fio de café, crema
-    useStudioEnv.ts     environment map gerado em canvas (sem HDR externo)
-    SceneCanvas.tsx     wrapper de Canvas com loop controlado por visibilidade
-    HeroScene  JourneyScene  RoastScene  PourScene  RitualScene
-qa/
-  run-qa.mjs            varredura de dispositivos, overflow, a11y, formulário
-  smoke.mjs             teste rápido de uma viewport
-```
-
-## Os três momentos visuais
-
-| # | Seção | O que acontece |
-|---|---|---|
-| 1 | **A jornada** (`#jornada`) | 8 cenas controladas pela rolagem. Uma malha interpola de cereja a grão; um enxame de grãos instanciados se reorganiza entre sete layouts; um sistema de partículas muda de poeira para brasa, pó e vapor. |
-| 2 | **Torrefação** (`#torrefacao`) | Tambor metálico, massa de grãos tombando, brasas e luz âmbar. A rolagem é o perfil de torra: secagem → crack → desenvolvimento → descarga. |
-| 3 | **O ritual** (`#ritual`) | Macro da superfície do espresso. A crema se forma em espiral e estabiliza; a câmera mergulha e se afasta. |
-
-Entre a xícara (`#xicara`) e a seção humana, um fio de café continua descendo
-pela calha lateral (`CoffeeThread`), costurando as duas seções.
-
-## Acessibilidade e fallbacks
-
-- `prefers-reduced-motion` e ausência de WebGL trocam as seções fixadas por
-  versões editoriais completas — mesma narrativa, mesmo conteúdo.
-- A jornada de 8 cenas existe em `sr-only` como lista ordenada.
-- Skip link, foco visível, `lang="pt-BR"`, `alt` em todas as imagens.
-
-## QA
+With the application running:
 
 ```bash
-npm run start                       # em um terminal
-QA_ONLY=fallback node qa/run-qa.mjs # layout/a11y em 10 viewports
-QA_ONLY=webgl    node qa/run-qa.mjs # a experiência 3D em 3 viewports
+QA_ONLY=fallback node qa/run-qa.mjs
+QA_ONLY=webgl node qa/run-qa.mjs
 ```
 
-Resultados e screenshots vão para `qa/shots/` (fora do versionamento).
+These are documented commands, **not a claim of passing results**. Check `DECISOES.md` for pending work and limitations.
 
-Veja [DECISOES.md](./DECISOES.md) para o registro de decisões, limitações
-conhecidas e pendências.
+## Signature interactive sequences
+
+The original project documentation describes three key experiences:
+
+| Sequence | Engineering detail |
+| --- | --- |
+| Coffee journey (`#jornada`) | Eight scroll-controlled scenes, a cherry-to-bean geometry morph, instanced beans transitioning between layouts, and particles shifting from dust to embers, grounds, and steam |
+| Roasting (`#torrefacao`) | A metallic drum, moving beans, embers, and scroll-driven roasting stages from drying through discharge |
+| Espresso ritual (`#ritual`) | A macro crema simulation with spiral movement and a camera transition |
+
+The `CoffeeThread` visual connects the pouring sequence to later content. The implementation is described in the source repository; animation quality and device performance have not been independently benchmarked.
+
+## Engineering decisions and asset strategy
+
+The original README documents procedural 3D geometry and shaders, including `coffeeGeometry.ts`, `morphMaterial.ts`, `shaders.ts`, and a generated canvas environment map. It describes the experience as code-driven, without paid runtime services or externally loaded 3D assets. Refer to [DECISOES.md](./DECISOES.md) for known limitations and technical trade-offs.
+
+## Accessibility and performance approach
+
+The repository documents reduced-motion alternatives, no-WebGL fallbacks, semantic content, and controlled rendering based on visibility. Their effectiveness still requires independent verification across browsers and devices.
+
+## QA coverage confirmed in source
+
+The tracked `qa/run-qa.mjs` defines **10 fallback viewport configurations** (including mobile landscape, tablets, and desktops) and **3 WebGL viewport configurations**. It records layout overflow, console and request failures, semantic landmarks, navigation and form interactions, and screenshots. The WebGL pass uses headless Chromium software rendering; its timing is **not** representative of a device GPU. These are checks implemented in source, **not passing test results**.
+
+## Demo and screenshots
+
+Live URL and actual screenshots: pending independent verification and inclusion. No fabricated metrics or screenshots are used.
+
+## License and attribution
+
+No license is asserted here. Confirm rights for any third-party materials before reuse.
