@@ -69,6 +69,10 @@ The original README documents procedural 3D geometry and shaders, including `cof
 
 The repository documents reduced-motion alternatives, no-WebGL fallbacks, semantic content, and controlled rendering based on visibility. Their effectiveness still requires independent verification across browsers and devices.
 
+## QA coverage confirmed in source
+
+The tracked `qa/run-qa.mjs` defines **10 fallback viewport configurations** (including mobile landscape, tablets, and desktops) and **3 WebGL viewport configurations**. It records layout overflow, console and request failures, semantic landmarks, navigation and form interactions, and screenshots. The WebGL pass uses headless Chromium software rendering; its timing is **not** representative of a device GPU. These are checks implemented in source, **not passing test results**.
+
 ## Demo and screenshots
 
 Live URL and actual screenshots: pending independent verification and inclusion. No fabricated metrics or screenshots are used.
